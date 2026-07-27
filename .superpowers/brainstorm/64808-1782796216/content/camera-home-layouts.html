@@ -1,0 +1,93 @@
+<h2>iPhone 风格相机主界面方向</h2>
+<p class="subtitle">先选第一版 MVP 的拍摄页布局。重点看：打开即拍、风格切换、倍率/翻转/水印入口是否顺手。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="width:220px;height:430px;margin:0 auto;border-radius:34px;background:#101010;color:#fff;position:relative;overflow:hidden;border:8px solid #222;box-shadow:0 18px 40px rgba(0,0,0,.25)">
+        <div style="position:absolute;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;font-size:18px;opacity:.9">
+          <span>⚡</span><span>▦</span><span>4:3</span><span>⚙</span>
+        </div>
+        <div style="position:absolute;inset:58px 0 142px;background:linear-gradient(160deg,#2b3332,#d3c19c 46%,#5e6f5e);"></div>
+        <div style="position:absolute;top:165px;left:94px;width:32px;height:32px;border:2px solid #f5d36a;border-radius:50%"></div>
+        <div style="position:absolute;bottom:108px;left:0;right:0;display:flex;gap:8px;overflow:hidden;padding:0 14px;font-size:11px">
+          <span style="background:#fff;color:#111;border-radius:14px;padding:6px 10px;white-space:nowrap">食物 ins</span>
+          <span style="background:rgba(255,255,255,.18);border-radius:14px;padding:6px 10px;white-space:nowrap">冷白皮</span>
+          <span style="background:rgba(255,255,255,.18);border-radius:14px;padding:6px 10px;white-space:nowrap">富士</span>
+        </div>
+        <div style="position:absolute;bottom:70px;left:54px;right:54px;display:flex;justify-content:space-around;font-size:12px">
+          <span>.5</span><span style="color:#ffd45b">1x</span><span>2</span>
+        </div>
+        <div style="position:absolute;bottom:16px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between">
+          <div style="width:34px;height:34px;border-radius:8px;background:#85735c"></div>
+          <div style="width:58px;height:58px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.45)"></div>
+          <div style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center">↻</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 原相机贴近型</h3>
+      <p>最像 iPhone 相机：顶部少量状态，底部风格、倍率、快门分层。推荐第一版采用。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="width:220px;height:430px;margin:0 auto;border-radius:34px;background:#101010;color:#fff;position:relative;overflow:hidden;border:8px solid #222;box-shadow:0 18px 40px rgba(0,0,0,.25)">
+        <div style="position:absolute;inset:22px 0 126px;background:linear-gradient(150deg,#46595a,#dccaa4 45%,#333);"></div>
+        <div style="position:absolute;top:22px;left:12px;width:42px;border-radius:20px;background:rgba(0,0,0,.36);display:flex;flex-direction:column;gap:14px;align-items:center;padding:12px 0;font-size:16px">
+          <span>⚡</span><span>▦</span><span>💧</span><span>⚙</span>
+        </div>
+        <div style="position:absolute;right:12px;top:98px;border-radius:18px;background:rgba(0,0,0,.36);display:flex;flex-direction:column;gap:10px;padding:10px 8px;font-size:12px">
+          <span>.5</span><span style="color:#ffd45b">1x</span><span>2</span>
+        </div>
+        <div style="position:absolute;bottom:86px;left:12px;right:12px;background:rgba(18,18,18,.72);border-radius:18px;padding:10px;display:flex;gap:8px;overflow:hidden;font-size:11px">
+          <span style="background:#fff;color:#111;border-radius:14px;padding:6px 10px;white-space:nowrap">食物</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:14px;padding:6px 10px;white-space:nowrap">冷白皮</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:14px;padding:6px 10px;white-space:nowrap">富士</span>
+        </div>
+        <div style="position:absolute;bottom:16px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between">
+          <div style="width:32px;height:32px;border-radius:8px;background:#66715f"></div>
+          <div style="width:58px;height:58px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.45)"></div>
+          <div style="width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center">↻</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 创作者工具型</h3>
+      <p>水印、网格、参数入口更显眼，适合重度调色用户，但第一眼会比原相机更复杂。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="width:220px;height:430px;margin:0 auto;border-radius:34px;background:#101010;color:#fff;position:relative;overflow:hidden;border:8px solid #222;box-shadow:0 18px 40px rgba(0,0,0,.25)">
+        <div style="position:absolute;inset:18px 0 164px;background:linear-gradient(150deg,#697a76,#f0d6a5 48%,#3e4d43);"></div>
+        <div style="position:absolute;top:18px;left:18px;right:18px;display:flex;justify-content:space-between;font-size:17px">
+          <span>⚡</span><span>▦</span><span>💧</span>
+        </div>
+        <div style="position:absolute;bottom:142px;left:14px;right:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px">
+          <span style="background:#fff;color:#111;border-radius:12px;padding:8px 6px;text-align:center">食物</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:12px;padding:8px 6px;text-align:center">冷白</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:12px;padding:8px 6px;text-align:center">富士</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:12px;padding:8px 6px;text-align:center">城市</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:12px;padding:8px 6px;text-align:center">奶油</span>
+          <span style="background:rgba(255,255,255,.16);border-radius:12px;padding:8px 6px;text-align:center">夜景</span>
+        </div>
+        <div style="position:absolute;bottom:78px;left:24px;right:24px;display:flex;justify-content:space-around;font-size:12px">
+          <span>.5</span><span style="color:#ffd45b">1x</span><span>2</span><span>↻</span>
+        </div>
+        <div style="position:absolute;bottom:16px;left:82px;width:58px;height:58px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.45)"></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 风格优先型</h3>
+      <p>一次展示更多预设，风格选择强，但占用预览面积，不太符合“打开即可拍”。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>我的建议</h3>
+  <p>选择 A 做 MVP 主界面：先保证像原相机、好理解、快拍。B 的水印和细调入口可以放进设置/编辑页，C 的多风格网格留到后续风格库页面。</p>
+</div>

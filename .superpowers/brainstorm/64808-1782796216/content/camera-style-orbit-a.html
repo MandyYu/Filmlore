@@ -1,0 +1,72 @@
+<h2>A 方案修订：风格选择参照 iPhone 灯光选择</h2>
+<p class="subtitle">把“食物 / 冷白皮 / 富士 / 城市”等风格做成底部光效轮盘：小圆点可左右滑动，当前风格居中高亮，上方浮出名称。</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">拍摄页：默认收起状态</div>
+    <div class="mockup-body">
+      <div style="width:250px;height:520px;margin:0 auto;border-radius:38px;background:#050505;color:#fff;position:relative;overflow:hidden;border:8px solid #202020;box-shadow:0 18px 40px rgba(0,0,0,.26)">
+        <div style="position:absolute;top:0;left:0;right:0;height:82px;background:#000">
+          <div style="position:absolute;top:22px;left:18px;width:44px;height:44px;border-radius:50%;background:#1f1f1f;display:flex;align-items:center;justify-content:center;font-size:20px">▦</div>
+          <div style="position:absolute;top:22px;right:18px;border-radius:24px;background:#1f1f1f;display:flex;gap:16px;align-items:center;padding:12px 17px;font-size:18px"><span>⚡</span><span>•••</span></div>
+        </div>
+
+        <div style="position:absolute;top:82px;left:0;right:0;height:300px;background:linear-gradient(160deg,#4d5956 0%,#e5d1a0 42%,#f4f5ef 63%,#6e756d 100%)">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.45) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.45) 1px,transparent 1px);background-size:83px 100px"></div>
+          <div style="position:absolute;top:120px;left:68px;right:68px;height:2px;background:#ffd400"></div>
+        </div>
+
+        <div style="position:absolute;bottom:132px;left:0;right:0;height:74px">
+          <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);background:rgba(80,80,80,.72);border-radius:8px;padding:7px 14px;font-size:19px;font-weight:500">食物 ins 风</div>
+          <div style="position:absolute;top:43px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:25px">
+            <span style="width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#a8b7aa 45%,rgba(255,255,255,.2));opacity:.45"></span>
+            <span style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#cad7e8 45%,rgba(255,255,255,.2));opacity:.65"></span>
+            <span style="position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center">
+              <span style="position:absolute;inset:0;clip-path:polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);border:2px solid rgba(255,255,255,.9);background:rgba(255,255,255,.12)"></span>
+              <span style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#f5d78e 48%,rgba(255,255,255,.18));box-shadow:0 0 12px rgba(255,218,107,.75)"></span>
+            </span>
+            <span style="width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#9fb1c4 45%,rgba(255,255,255,.2));opacity:.65"></span>
+            <span style="width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#8e9498 45%,rgba(255,255,255,.2));opacity:.45"></span>
+          </div>
+        </div>
+
+        <div style="position:absolute;bottom:86px;left:20px;width:48px;height:48px;border-radius:50%;background:#505050;display:flex;align-items:center;justify-content:center;font-size:21px">1x</div>
+        <div style="position:absolute;bottom:18px;left:22px;width:42px;height:42px;border-radius:12px;background:linear-gradient(140deg,#ccb78c,#73604b)"></div>
+        <div style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;background:#fff;border:8px solid #393939"></div>
+        <div style="position:absolute;bottom:18px;right:22px;width:46px;height:46px;border-radius:50%;background:#202020;display:flex;align-items:center;justify-content:center;font-size:26px">↻</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">交互细节</div>
+    <div class="mockup-body">
+      <div class="section">
+        <h3>显示方式</h3>
+        <p>风格栏改为 5-7 个“光效点”可见，中心点代表当前风格。选中项使用六边形/光圈描边，未选中项弱化为半透明圆点。</p>
+      </div>
+      <div class="section">
+        <h3>切换交互</h3>
+        <p>左右滑动轮盘切换风格；点击某个圆点直接选中；选中后上方短暂显示风格名称，如“食物 ins 风”。</p>
+      </div>
+      <div class="section">
+        <h3>长按交互</h3>
+        <p>长按当前风格进入参数编辑页；上滑风格名气泡可展开完整风格列表。</p>
+      </div>
+      <div class="section">
+        <h3>第一版风格顺序</h3>
+        <p>原图、食物 ins、冷白皮、富士清新、城市质感、日系奶油、夜景氛围。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approved_style_orbit" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>采用这个风格轮盘</h3>
+      <p>我会把它写进设计：A 方案主界面 + iPhone 灯光选择式风格交互。</p>
+    </div>
+  </div>
+</div>

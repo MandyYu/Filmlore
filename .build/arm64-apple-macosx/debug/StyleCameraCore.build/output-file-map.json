@@ -1,0 +1,54 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/primary.swiftdeps"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/BuiltInPresets.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/PhotoGuidance.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleParams.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StylePreset.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleRenderer.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleSelectionModel.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.dia"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/ZoomFactorMapper.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.dia"
+  }
+}

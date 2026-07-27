@@ -1,0 +1,360 @@
+{
+  "source": "/Users/mandy/Documents/Mandy/相机/code/StyleCameraApp/Views/CameraView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "%lldx",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 354
+        }
+      },
+      {
+        "comment": "",
+        "key": "图片比例",
+        "location": {
+          "startingColumn": 29,
+          "startingLine": 564
+        }
+      },
+      {
+        "comment": "",
+        "key": "设置",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 1140
+        }
+      },
+      {
+        "comment": "",
+        "key": "完成",
+        "location": {
+          "startingColumn": 28,
+          "startingLine": 1144
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启水印",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1154
+        }
+      },
+      {
+        "comment": "",
+        "key": "模式",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1157
+        }
+      },
+      {
+        "comment": "",
+        "key": "请从相册选择图片。推荐使用带透明背景的 PNG，适合用作签名、Logo 或图形水印。",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1277
+        }
+      },
+      {
+        "comment": "",
+        "key": "水印",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1179
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启后可手动配置文字信息，或上传 PNG 图片作为水印。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1182
+        }
+      },
+      {
+        "comment": "",
+        "key": "留空使用当前定位：%@",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1198
+        }
+      },
+      {
+        "comment": "",
+        "key": "文字",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1190
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示风格",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1191
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示日期",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1192
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示设备",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1193
+        }
+      },
+      {
+        "comment": "",
+        "key": "显示位置",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1194
+        }
+      },
+      {
+        "comment": "",
+        "key": "位置文字",
+        "location": {
+          "startingColumn": 27,
+          "startingLine": 1197
+        }
+      },
+      {
+        "comment": "",
+        "key": "效果",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1214
+        }
+      },
+      {
+        "comment": "",
+        "key": "透明度",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1228
+        }
+      },
+      {
+        "comment": "",
+        "key": "从相册选择水印",
+        "location": {
+          "startingColumn": 41,
+          "startingLine": 1242
+        }
+      },
+      {
+        "comment": "",
+        "key": "从相册更换水印",
+        "location": {
+          "startingColumn": 67,
+          "startingLine": 1242
+        }
+      },
+      {
+        "comment": "",
+        "key": "已选择水印图片",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1261
+        }
+      },
+      {
+        "comment": "",
+        "key": "%lld x %lld",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1263
+        }
+      },
+      {
+        "comment": "",
+        "key": "移除图片水印",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 1274
+        }
+      },
+      {
+        "comment": "",
+        "key": "大小",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1296
+        }
+      },
+      {
+        "comment": "",
+        "key": "透明度",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1301
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启相框",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1308
+        }
+      },
+      {
+        "comment": "",
+        "key": "样式",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1311
+        }
+      },
+      {
+        "comment": "",
+        "key": "强度",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 1318
+        }
+      },
+      {
+        "comment": "",
+        "key": "相框",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1326
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启后可选择相框样式并调整强度。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1329
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启指导",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 1336
+        }
+      },
+      {
+        "comment": "",
+        "key": "提示强度",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1339
+        }
+      },
+      {
+        "comment": "",
+        "key": "构图建议",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1345
+        }
+      },
+      {
+        "comment": "",
+        "key": "水平角度",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1346
+        }
+      },
+      {
+        "comment": "",
+        "key": "光线提醒",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1347
+        }
+      },
+      {
+        "comment": "",
+        "key": "清晰度提醒",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1348
+        }
+      },
+      {
+        "comment": "",
+        "key": "风格建议",
+        "location": {
+          "startingColumn": 24,
+          "startingLine": 1349
+        }
+      },
+      {
+        "comment": "",
+        "key": "AI 拍照指导",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1352
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启后可配置提示强度和建议类型。",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1355
+        }
+      },
+      {
+        "comment": "",
+        "key": "未选择 PNG",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 1558
+        }
+      },
+      {
+        "comment": "",
+        "key": "文字颜色",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 1841
+        }
+      },
+      {
+        "comment": "",
+        "key": "A",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 1854
+        }
+      },
+      {
+        "comment": "",
+        "key": "关闭水印",
+        "location": {
+          "startingColumn": 36,
+          "startingLine": 1909
+        }
+      },
+      {
+        "comment": "",
+        "key": "开启水印",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 1909
+        }
+      }
+    ]
+  },
+  "version": 1
+}

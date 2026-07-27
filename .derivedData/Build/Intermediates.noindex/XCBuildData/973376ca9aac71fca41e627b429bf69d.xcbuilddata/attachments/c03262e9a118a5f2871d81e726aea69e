@@ -1,0 +1,79 @@
+{
+  "" : {
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleCameraCore-primary.dia",
+    "emit-module-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleCameraCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleCameraCore-primary-emit-module.dia",
+    "pch" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleCameraCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleCameraCore-primary.swiftdeps"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/BuiltInPresets.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/BuiltInPresets~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/PhotoGuidance.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/PhotoGuidance~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleParams.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleParams~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StylePreset.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StylePreset~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleRenderer.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleRenderer~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleSelectionModel.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/StyleSelectionModel~partial.swiftmodule"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/ZoomFactorMapper.swift" : {
+    "const-values" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.swiftconstvalues",
+    "dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.d",
+    "diagnostics" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.dia",
+    "index-unit-output-path" : "/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.o",
+    "llvm-bc" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.bc",
+    "object" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.o",
+    "swift-dependencies" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper.swiftdeps",
+    "swiftmodule" : "/Users/mandy/Documents/Mandy/相机/code/.derivedData/Build/Intermediates.noindex/StyleCamera.build/Debug-iphoneos/StyleCameraCore.build/Objects-normal/arm64/ZoomFactorMapper~partial.swiftmodule"
+  }
+}

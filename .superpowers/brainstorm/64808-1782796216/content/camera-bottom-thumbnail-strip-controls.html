@@ -1,0 +1,76 @@
+<h2>拍摄页底部：缩略图风格条 + 原拍照控件</h2>
+<p class="subtitle">只把原来的风格效果轮盘替换成真实效果缩略图条；相册、快门、翻转、倍率等拍照功能仍然保留在底部。</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">拍摄页最终底部结构</div>
+    <div class="mockup-body">
+      <div style="width:280px;height:590px;margin:0 auto;border-radius:38px;background:#030303;color:#fff;position:relative;overflow:hidden;border:8px solid #202020;box-shadow:0 18px 40px rgba(0,0,0,.26)">
+        <div style="position:absolute;top:0;left:0;right:0;height:54px;background:#000">
+          <div style="position:absolute;top:13px;left:16px;width:34px;height:34px;border-radius:50%;background:#1f1f1f;display:flex;align-items:center;justify-content:center;font-size:17px">▦</div>
+          <div style="position:absolute;top:13px;right:16px;border-radius:19px;background:#1f1f1f;display:flex;gap:12px;align-items:center;padding:8px 13px;font-size:16px"><span>⚡</span><span>•••</span></div>
+        </div>
+
+        <div style="position:absolute;top:54px;left:0;right:0;height:366px;background:linear-gradient(160deg,#4d5956 0%,#e6d1a1 32%,#f4f6f0 58%,#6f766d 100%)">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.42) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.42) 1px,transparent 1px);background-size:93px 122px"></div>
+          <div style="position:absolute;top:150px;left:74px;right:74px;height:2px;background:#ffd400"></div>
+          <div style="position:absolute;top:132px;left:50%;transform:translateX(-50%);background:rgba(40,40,40,.64);border-radius:8px;padding:6px 13px;font-size:17px;font-weight:500">鲜冷色</div>
+        </div>
+
+        <div style="position:absolute;bottom:112px;left:0;right:0;height:72px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.8) 18%,#000)">
+          <div style="position:absolute;top:6px;left:32px;right:0;height:58px;display:flex;align-items:flex-end;gap:4px;overflow:hidden">
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#d7c7b4,#8b5632 45%,#e9edf0);flex:0 0 auto;opacity:.72"></div>
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#f0d3a9,#a45e23 45%,#eef3f5);flex:0 0 auto;opacity:.86"></div>
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#dbe8f7,#79584b 45%,#e8f4ff);flex:0 0 auto;opacity:.95"></div>
+            <div style="width:50px;height:64px;border-radius:9px;background:linear-gradient(160deg,#e7eceb,#755139 45%,#dbe8ef);border:4px solid #fff;box-shadow:0 0 15px rgba(255,255,255,.34);flex:0 0 auto"></div>
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#dfeadc,#71523b 45%,#e1e5de);flex:0 0 auto;opacity:.95"></div>
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#c9d5df,#4a4d54 45%,#d7dce0);flex:0 0 auto;opacity:.82"></div>
+            <div style="width:38px;height:50px;border-radius:5px;background:linear-gradient(160deg,#eadfcb,#8c4e20 45%,#f0ebe0);flex:0 0 auto;opacity:.68"></div>
+          </div>
+        </div>
+
+        <div style="position:absolute;bottom:78px;left:54px;right:54px;display:flex;align-items:center;justify-content:space-around;font-size:13px;color:#fff">
+          <span>.5</span>
+          <span style="color:#ffd400;font-size:15px;font-weight:700">1x</span>
+          <span>2</span>
+        </div>
+
+        <div style="position:absolute;bottom:12px;left:22px;width:44px;height:44px;border-radius:12px;background:linear-gradient(140deg,#ccb78c,#73604b);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)"></div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:78px;height:78px;border-radius:50%;background:#fff;border:9px solid #363636;box-shadow:0 0 0 1px rgba(255,255,255,.5)"></div>
+        <div style="position:absolute;bottom:12px;right:22px;width:48px;height:48px;border-radius:50%;background:#202020;display:flex;align-items:center;justify-content:center;font-size:27px">↻</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">确认后的交互分层</div>
+    <div class="mockup-body">
+      <div class="section">
+        <h3>替代范围</h3>
+        <p>只替代风格轮盘区域。原先的小圆点/光球改为真实效果缩略图胶片条，显示当前相机画面套用不同风格后的预览。</p>
+      </div>
+      <div class="section">
+        <h3>保留范围</h3>
+        <p>底部仍保留相册缩略图、快门、前后摄翻转、倍率选择。它们和 iPhone 相机一样作为拍摄主控，不进入编辑页模式。</p>
+      </div>
+      <div class="section">
+        <h3>选中反馈</h3>
+        <p>当前风格缩略图居中放大，白色描边和阴影；取景画面底部短暂显示风格名。左右滑动缩略图条即可切换风格。</p>
+      </div>
+      <div class="section">
+        <h3>强度调节</h3>
+        <p>拍摄页默认不显示强度刻度，保持简洁。长按选中风格或上滑缩略图条，再展开强度/参数编辑。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approved_camera_thumbnail_strip_controls" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>确认这个底部方案</h3>
+      <p>我会按“拍摄控件保留 + 风格缩略图条替代轮盘”写入设计并进入实现。</p>
+    </div>
+  </div>
+</div>

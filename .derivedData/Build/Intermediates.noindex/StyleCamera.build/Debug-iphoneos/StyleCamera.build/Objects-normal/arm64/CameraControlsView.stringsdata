@@ -1,0 +1,16 @@
+{
+  "source": "/Users/mandy/Documents/Mandy/相机/code/StyleCameraApp/Views/CameraControlsView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "风格预览",
+        "location": {
+          "startingColumn": 37,
+          "startingLine": 47
+        }
+      }
+    ]
+  },
+  "version": 1
+}

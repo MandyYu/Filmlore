@@ -1,0 +1,103 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "PackageStructure": ["<PackageStructure>"]
+  "StyleCameraCore-arm64-apple-macosx-debug.module": ["<StyleCameraCore-arm64-apple-macosx-debug.module>"]
+  "StyleCameraCoreChecks-arm64-apple-macosx-debug.exe": ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe>"]
+  "StyleCameraCoreChecks-arm64-apple-macosx-debug.module": ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.module>"]
+  "main": ["<StyleCameraCore-arm64-apple-macosx-debug.module>","<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe>","<StyleCameraCoreChecks-arm64-apple-macosx-debug.module>"]
+  "test": ["<StyleCameraCore-arm64-apple-macosx-debug.module>","<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe>","<StyleCameraCoreChecks-arm64-apple-macosx-debug.module>"]
+default: "main"
+nodes:
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCoreChecks/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks":
+    is-mutated: true
+commands:
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/BuiltInPresets.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/PhotoGuidance.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleParams.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StylePreset.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleRenderer.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleSelectionModel.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/ZoomFactorMapper.swift"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/sources"]
+    description: "Write auxiliary file /Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/sources"
+
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks-entitlement.plist"]
+    description: "Write auxiliary file /Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks-entitlement.plist"
+
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCoreChecks/main.swift"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/sources"]
+    description: "Write auxiliary file /Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/sources"
+
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swift.o"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.product/Objects.LinkFileList"
+
+  "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+
+  "<StyleCameraCore-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCore.swiftmodule"]
+    outputs: ["<StyleCameraCore-arm64-apple-macosx-debug.module>"]
+
+  "<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe>":
+    tool: phony
+    inputs: ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    outputs: ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe>"]
+
+  "<StyleCameraCoreChecks-arm64-apple-macosx-debug.module>":
+    tool: phony
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCoreChecks.swiftmodule"]
+    outputs: ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.module>"]
+
+  "C.StyleCameraCore-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/BuiltInPresets.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/PhotoGuidance.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleParams.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StylePreset.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleRenderer.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/StyleSelectionModel.swift","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/ZoomFactorMapper.swift","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/sources"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCore.swiftmodule"]
+    description: "Compiling Swift Module 'StyleCameraCore' (7 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","StyleCameraCore","-emit-dependencies","-emit-module","-emit-module-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCore.swiftmodule","-output-file-map","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/sources","-I","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/include/StyleCameraCore-Swift.h","-swift-version","6","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","code"]
+
+  "C.StyleCameraCoreChecks-arm64-apple-macosx-debug.exe":
+    tool: shell
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/BuiltInPresets.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/PhotoGuidance.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleParams.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StylePreset.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleRenderer.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/StyleSelectionModel.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCore.build/ZoomFactorMapper.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.product/Objects.LinkFileList"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/StyleCameraCoreChecks"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-L","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug","-o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks","-module-name","StyleCameraCoreChecks","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_StyleCameraCoreChecks_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx14.0","-Xlinker","-add_ast_path","-Xlinker","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCore.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCoreChecks.swiftmodule","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g"]
+
+  "C.StyleCameraCoreChecks-arm64-apple-macosx-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks-entitlement.plist"]
+    outputs: ["<StyleCameraCoreChecks-arm64-apple-macosx-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/StyleCameraCoreChecks"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks-entitlement.plist","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks"]
+
+  "C.StyleCameraCoreChecks-arm64-apple-macosx-debug.module":
+    tool: shell
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCoreChecks/main.swift","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCore.swiftmodule","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/sources"]
+    outputs: ["/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swift.o","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCoreChecks.swiftmodule"]
+    description: "Compiling Swift Module 'StyleCameraCoreChecks' (1 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","StyleCameraCoreChecks","-emit-dependencies","-emit-module","-emit-module-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules/StyleCameraCoreChecks.swiftmodule","-output-file-map","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/output-file-map.json","-incremental","-c","@/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/sources","-I","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j10","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","StyleCameraCoreChecks_main","-swift-version","6","-plugin-path","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","code"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCore/","/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCoreChecks/","/Users/mandy/Documents/Mandy/相机/code/Package.swift","/Users/mandy/Documents/Mandy/相机/code/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/primary.swiftdeps"
+  },
+  "/Users/mandy/Documents/Mandy/相机/code/Sources/StyleCameraCoreChecks/main.swift": {
+    "dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.d",
+    "object": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swift.o",
+    "swiftmodule": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.swiftdeps",
+    "diagnostics": "/Users/mandy/Documents/Mandy/相机/code/.build/arm64-apple-macosx/debug/StyleCameraCoreChecks.build/main.dia"
+  }
+}

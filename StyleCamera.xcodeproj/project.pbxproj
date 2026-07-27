@@ -1,0 +1,531 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* Sources/StyleCameraCore/StyleParams.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* Sources/StyleCameraCore/StyleParams.swift */; };
+		100000000000000000000002 /* Sources/StyleCameraCore/StylePreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* Sources/StyleCameraCore/StylePreset.swift */; };
+		100000000000000000000003 /* Sources/StyleCameraCore/BuiltInPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* Sources/StyleCameraCore/BuiltInPresets.swift */; };
+		100000000000000000000004 /* Sources/StyleCameraCore/StyleSelectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* Sources/StyleCameraCore/StyleSelectionModel.swift */; };
+		100000000000000000000005 /* Sources/StyleCameraCore/StyleRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* Sources/StyleCameraCore/StyleRenderer.swift */; };
+		100000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift */; };
+		100000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift */; };
+		100000000000000000000008 /* StyleCameraApp/Views/CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* StyleCameraApp/Views/CameraView.swift */; };
+		100000000000000000000009 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* CameraPreviewView.swift */; };
+		10000000000000000000000A /* StyleCameraApp/Views/VerticalStyleSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000A /* StyleCameraApp/Views/VerticalStyleSelectorView.swift */; };
+		10000000000000000000000B /* StyleCameraApp/Views/CameraControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000B /* StyleCameraApp/Views/CameraControlsView.swift */; };
+		10000000000000000000000C /* StyleCameraApp/Views/StyleEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000C /* StyleCameraApp/Views/StyleEditorView.swift */; };
+		10000000000000000000000D /* StyleCameraApp/Services/CameraEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* StyleCameraApp/Services/CameraEngine.swift */; };
+		10000000000000000000000E /* StyleCameraApp/Services/PhotoLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* StyleCameraApp/Services/PhotoLibraryService.swift */; };
+		10000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift */; };
+		100000000000000000000010 /* StyleCameraCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* StyleCameraCore.framework */; };
+		100000000000000000000011 /* StyleCameraCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* StyleCameraCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		100000000000000000000012 /* Sources/StyleCameraCore/ZoomFactorMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* Sources/StyleCameraCore/ZoomFactorMapper.swift */; };
+		100000000000000000000013 /* Sources/StyleCameraCore/PhotoGuidance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* Sources/StyleCameraCore/PhotoGuidance.swift */; };
+		100000000000000000000014 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */; };
+		100000000000000000000015 /* StyleCameraApp/Services/MotionLevelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */; };
+		100000000000000000000016 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		300000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 400000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000002;
+			remoteInfo = StyleCameraCore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C00000000000000000000001 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				100000000000000000000011 /* StyleCameraCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		200000000000000000000001 /* Sources/StyleCameraCore/StyleParams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/StyleParams.swift; sourceTree = "<group>"; };
+		200000000000000000000002 /* Sources/StyleCameraCore/StylePreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/StylePreset.swift; sourceTree = "<group>"; };
+		200000000000000000000003 /* Sources/StyleCameraCore/BuiltInPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/BuiltInPresets.swift; sourceTree = "<group>"; };
+		200000000000000000000004 /* Sources/StyleCameraCore/StyleSelectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/StyleSelectionModel.swift; sourceTree = "<group>"; };
+		200000000000000000000005 /* Sources/StyleCameraCore/StyleRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/StyleRenderer.swift; sourceTree = "<group>"; };
+		200000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/StyleCameraApp.swift; sourceTree = "<group>"; };
+		200000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/ViewModels/CameraViewModel.swift; sourceTree = "<group>"; };
+		200000000000000000000008 /* StyleCameraApp/Views/CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/CameraView.swift; sourceTree = "<group>"; };
+		200000000000000000000009 /* CameraPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraPreviewView.swift; path = StyleCameraApp/Views/CameraPreviewView.swift; sourceTree = "<group>"; };
+		20000000000000000000000A /* StyleCameraApp/Views/VerticalStyleSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/VerticalStyleSelectorView.swift; sourceTree = "<group>"; };
+		20000000000000000000000B /* StyleCameraApp/Views/CameraControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/CameraControlsView.swift; sourceTree = "<group>"; };
+		20000000000000000000000C /* StyleCameraApp/Views/StyleEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/StyleEditorView.swift; sourceTree = "<group>"; };
+		20000000000000000000000D /* StyleCameraApp/Services/CameraEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/CameraEngine.swift; sourceTree = "<group>"; };
+		20000000000000000000000E /* StyleCameraApp/Services/PhotoLibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/PhotoLibraryService.swift; sourceTree = "<group>"; };
+		20000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/WatermarkRenderer.swift; sourceTree = "<group>"; };
+		200000000000000000000010 /* StyleCameraCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = StyleCameraCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000011 /* StyleCamera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StyleCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000012 /* StyleCameraApp/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = StyleCameraApp/Info.plist; sourceTree = "<group>"; };
+		200000000000000000000013 /* Sources/StyleCameraCore/ZoomFactorMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/ZoomFactorMapper.swift; sourceTree = "<group>"; };
+		200000000000000000000014 /* Sources/StyleCameraCore/PhotoGuidance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/StyleCameraCore/PhotoGuidance.swift; sourceTree = "<group>"; };
+		200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/CompositionGuideAnalyzer.swift; sourceTree = "<group>"; };
+		200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/MotionLevelService.swift; sourceTree = "<group>"; };
+		200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/PhotoGuidanceOverlayView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		600000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000010 /* StyleCameraCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		600000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		700000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				700000000000000000000002 /* Core */,
+				700000000000000000000003 /* App */,
+				700000000000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		700000000000000000000002 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000001 /* Sources/StyleCameraCore/StyleParams.swift */,
+				200000000000000000000002 /* Sources/StyleCameraCore/StylePreset.swift */,
+				200000000000000000000003 /* Sources/StyleCameraCore/BuiltInPresets.swift */,
+				200000000000000000000004 /* Sources/StyleCameraCore/StyleSelectionModel.swift */,
+				200000000000000000000005 /* Sources/StyleCameraCore/StyleRenderer.swift */,
+				200000000000000000000013 /* Sources/StyleCameraCore/ZoomFactorMapper.swift */,
+				200000000000000000000014 /* Sources/StyleCameraCore/PhotoGuidance.swift */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		700000000000000000000003 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift */,
+				200000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift */,
+				200000000000000000000008 /* StyleCameraApp/Views/CameraView.swift */,
+				200000000000000000000009 /* CameraPreviewView.swift */,
+				20000000000000000000000A /* StyleCameraApp/Views/VerticalStyleSelectorView.swift */,
+				20000000000000000000000B /* StyleCameraApp/Views/CameraControlsView.swift */,
+				20000000000000000000000C /* StyleCameraApp/Views/StyleEditorView.swift */,
+				200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */,
+				20000000000000000000000D /* StyleCameraApp/Services/CameraEngine.swift */,
+				20000000000000000000000E /* StyleCameraApp/Services/PhotoLibraryService.swift */,
+				20000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift */,
+				200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */,
+				200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */,
+				200000000000000000000012 /* StyleCameraApp/Info.plist */,
+			);
+			name = App;
+			sourceTree = "<group>";
+		};
+		700000000000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				200000000000000000000011 /* StyleCamera.app */,
+				200000000000000000000010 /* StyleCameraCore.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		500000000000000000000001 /* StyleCamera */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000001 /* Build configuration list for PBXNativeTarget "StyleCamera" */;
+			buildPhases = (
+				900000000000000000000001 /* Sources */,
+				600000000000000000000001 /* Frameworks */,
+				C00000000000000000000001 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = StyleCamera;
+			productName = StyleCamera;
+			productReference = 200000000000000000000011 /* StyleCamera.app */;
+			productType = "com.apple.product-type.application";
+		};
+		500000000000000000000002 /* StyleCameraCore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 800000000000000000000002 /* Build configuration list for PBXNativeTarget "StyleCameraCore" */;
+			buildPhases = (
+				900000000000000000000002 /* Sources */,
+				600000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StyleCameraCore;
+			productName = StyleCameraCore;
+			productReference = 200000000000000000000010 /* StyleCameraCore.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		400000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					500000000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					500000000000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 800000000000000000000003 /* Build configuration list for PBXProject "StyleCamera" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 700000000000000000000001;
+			productRefGroup = 700000000000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				500000000000000000000001 /* StyleCamera */,
+				500000000000000000000002 /* StyleCameraCore */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		900000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift in Sources */,
+				100000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift in Sources */,
+				100000000000000000000008 /* StyleCameraApp/Views/CameraView.swift in Sources */,
+				100000000000000000000009 /* CameraPreviewView.swift in Sources */,
+				10000000000000000000000A /* StyleCameraApp/Views/VerticalStyleSelectorView.swift in Sources */,
+				10000000000000000000000B /* StyleCameraApp/Views/CameraControlsView.swift in Sources */,
+				10000000000000000000000C /* StyleCameraApp/Views/StyleEditorView.swift in Sources */,
+				100000000000000000000016 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift in Sources */,
+				10000000000000000000000D /* StyleCameraApp/Services/CameraEngine.swift in Sources */,
+				10000000000000000000000E /* StyleCameraApp/Services/PhotoLibraryService.swift in Sources */,
+				10000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift in Sources */,
+				100000000000000000000014 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift in Sources */,
+				100000000000000000000015 /* StyleCameraApp/Services/MotionLevelService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		900000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000001 /* Sources/StyleCameraCore/StyleParams.swift in Sources */,
+				100000000000000000000002 /* Sources/StyleCameraCore/StylePreset.swift in Sources */,
+				100000000000000000000003 /* Sources/StyleCameraCore/BuiltInPresets.swift in Sources */,
+				100000000000000000000004 /* Sources/StyleCameraCore/StyleSelectionModel.swift in Sources */,
+				100000000000000000000005 /* Sources/StyleCameraCore/StyleRenderer.swift in Sources */,
+				100000000000000000000012 /* Sources/StyleCameraCore/ZoomFactorMapper.swift in Sources */,
+				100000000000000000000013 /* Sources/StyleCameraCore/PhotoGuidance.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A00000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000002 /* StyleCameraCore */;
+			targetProxy = 300000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		B00000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B00000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B00000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3R5SV9VV2C;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StyleCameraApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mandy.stylecamera;
+				PRODUCT_NAME = StyleCamera;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B00000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3R5SV9VV2C;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StyleCameraApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mandy.stylecamera;
+				PRODUCT_NAME = StyleCamera;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B00000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mandy.stylecamera.core;
+				PRODUCT_NAME = StyleCameraCore;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B00000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACH_O_TYPE = mh_dylib;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mandy.stylecamera.core;
+				PRODUCT_NAME = StyleCameraCore;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		800000000000000000000001 /* Build configuration list for PBXNativeTarget "StyleCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000003 /* Debug */,
+				B00000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000002 /* Build configuration list for PBXNativeTarget "StyleCameraCore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000005 /* Debug */,
+				B00000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		800000000000000000000003 /* Build configuration list for PBXProject "StyleCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000001 /* Debug */,
+				B00000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 400000000000000000000001 /* Project object */;
+}
