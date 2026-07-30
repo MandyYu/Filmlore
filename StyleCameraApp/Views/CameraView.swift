@@ -11,6 +11,7 @@ struct CameraView: View {
     @State private var isStylePreviewVisible = false
     @State private var isAspectRatioPickerVisible = false
     @State private var focusIndicator: FocusIndicator?
+    @State private var pinchStartZoom: CGFloat?
 
     var body: some View {
         GeometryReader { proxy in
@@ -38,7 +39,7 @@ struct CameraView: View {
                         Spacer()
 
                         StylePreviewComparisonView(
-                            presets: viewModel.selection.presets,
+                            presets: viewModel.visibleStylePresets,
                             selectedID: viewModel.selection.selectedPreset.id,
                             previewStore: viewModel.stylePreviewStore,
                             select: { id in
@@ -80,8 +81,15 @@ struct CameraView: View {
         .sheet(isPresented: $viewModel.isStyleEditorPresented) {
             StyleEditorView(
                 preset: viewModel.selection.selectedPreset,
+                previewStore: viewModel.rawPreviewStore,
                 save: viewModel.saveCustomStyle
             )
+            .onAppear {
+                viewModel.setStyleEditorPreviewActive(true)
+            }
+            .onDisappear {
+                viewModel.setStyleEditorPreviewActive(false)
+            }
         }
         .sheet(isPresented: $viewModel.isPhotoLibraryPresented) {
             PhotoLibraryPickerView { image in
@@ -93,11 +101,21 @@ struct CameraView: View {
                 watermark: $viewModel.watermark,
                 photoFrame: $viewModel.photoFrame,
                 guidanceSettings: $viewModel.guidanceSettings,
+                previewStore: viewModel.previewStore,
+                rawPreviewStore: viewModel.rawPreviewStore,
+                stylePreviewStore: viewModel.stylePreviewStore,
+                stylePresets: viewModel.selection.presets,
+                disabledStyleIDs: viewModel.disabledStyleIDs,
+                selectedStyleID: viewModel.selection.selectedPreset.id,
+                createStyle: viewModel.createCustomStyle,
+                updateStyle: viewModel.updateCustomStyle,
+                setStyleEnabled: viewModel.setStyleEnabled,
+                setStyleEditorPreviewActive: viewModel.setStyleEditorPreviewActive,
                 currentStyleName: viewModel.selection.selectedPreset.name,
                 locationText: viewModel.locationText,
                 requestLocation: viewModel.requestWatermarkLocation
             )
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
         }
         .onAppear(perform: viewModel.start)
         .onDisappear(perform: viewModel.stop)
@@ -201,6 +219,7 @@ struct CameraView: View {
                 .overlay(previewOverlayLayer)
                 .contentShape(Rectangle())
                 .gesture(focusTapGesture(in: surfaceSize))
+                .simultaneousGesture(pinchZoomGesture)
 
             if let focusIndicator {
                 FocusReticleView()
@@ -429,6 +448,29 @@ struct CameraView: View {
         SpatialTapGesture()
             .onEnded { value in
                 focus(at: value.location, in: surfaceSize)
+            }
+    }
+
+    private var pinchZoomGesture: some Gesture {
+        MagnifyGesture(minimumScaleDelta: 0.005)
+            .onChanged { value in
+                let startZoom = pinchStartZoom ?? viewModel.selectedLens
+                if pinchStartZoom == nil {
+                    pinchStartZoom = startZoom
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.84)) {
+                        isLensDialVisible = true
+                    }
+                }
+
+                let zoom = LensZoomScale.clampedZoom(startZoom * value.magnification)
+                viewModel.setZoomInteractively(zoom)
+            }
+            .onEnded { value in
+                let startZoom = pinchStartZoom ?? viewModel.selectedLens
+                let zoom = LensZoomScale.roundedZoom(startZoom * value.magnification)
+                pinchStartZoom = nil
+                viewModel.setZoomInteractively(zoom)
+                finishLensDial()
             }
     }
 
@@ -976,16 +1018,18 @@ private struct LiveFrameOverlayView: View {
     private func frameShape(size: CGSize) -> some View {
         switch preset.style {
         case .cleanWhite, .cleanBlack:
-            Rectangle()
-                .strokeBorder(frameColor.opacity(Double(preset.opacity)), lineWidth: max(12, min(size.width, size.height) * 0.035))
+            RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
+                .strokeBorder(frameColor.opacity(Double(preset.opacity)), lineWidth: frameLineWidth)
+                .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
         case .instant:
             ZStack(alignment: .bottom) {
-                Rectangle()
-                    .strokeBorder(Color.white.opacity(Double(preset.opacity)), lineWidth: max(14, min(size.width, size.height) * 0.045))
+                RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
+                    .strokeBorder(frameColor.opacity(Double(preset.opacity)), lineWidth: frameLineWidth)
+                    .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
 
                 Rectangle()
-                    .fill(Color.white.opacity(Double(preset.opacity)))
-                    .frame(height: max(56, size.height * 0.12))
+                    .fill(frameColor.opacity(Double(preset.opacity)))
+                    .frame(height: max(frameLineWidth * 3.1, size.height * 0.12))
                     .overlay(alignment: .topLeading) {
                         Capsule()
                             .fill(.black.opacity(0.12))
@@ -1001,14 +1045,42 @@ private struct LiveFrameOverlayView: View {
                 filmRail
             }
             .background {
-                Rectangle()
-                    .strokeBorder(Color.black.opacity(Double(preset.opacity) * 0.86), lineWidth: max(12, size.width * 0.028))
+                RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
+                    .strokeBorder(frameColor.opacity(Double(preset.opacity) * 0.92), lineWidth: frameLineWidth)
+                    .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
             }
+        case .minimal:
+            RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
+                .strokeBorder(
+                    frameColor.opacity(Double(preset.opacity)),
+                    lineWidth: max(3, frameLineWidth * 0.55)
+                )
+                .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
         }
     }
 
     private var frameColor: Color {
-        preset.style == .cleanBlack ? .black : .white
+        preset.backgroundColor.color
+    }
+
+    private var frameLineWidth: CGFloat {
+        CGFloat(preset.borderWidth)
+    }
+
+    private var frameCornerRadius: CGFloat {
+        CGFloat(preset.cornerRadius)
+    }
+
+    private var shadowColor: Color {
+        preset.shadowEnabled ? .black.opacity(0.34) : .clear
+    }
+
+    private var shadowRadius: CGFloat {
+        preset.shadowEnabled ? 8 : 0
+    }
+
+    private var shadowYOffset: CGFloat {
+        preset.shadowEnabled ? 3 : 0
     }
 
     private var filmRail: some View {
@@ -1019,8 +1091,8 @@ private struct LiveFrameOverlayView: View {
                     .frame(width: 8, height: 18)
             }
         }
-        .frame(width: 28)
-        .background(.black.opacity(Double(preset.opacity) * 0.78))
+        .frame(width: max(24, frameLineWidth * 1.65))
+        .background(frameColor.opacity(Double(preset.opacity) * 0.92))
     }
 }
 
@@ -1119,242 +1191,635 @@ private struct StylePreviewComparisonView: View {
     }
 }
 
+private enum CameraSettingsRoute: Hashable {
+    case styles
+    case watermark
+    case photoFrame
+    case guidance
+}
+
+private struct StyleEditorRequest: Identifiable {
+    let id = UUID()
+    let preset: StylePreset
+    let createsNewStyle: Bool
+}
+
 private struct CameraSettingsView: View {
     @Binding var watermark: WatermarkPreset
     @Binding var photoFrame: PhotoFramePreset
     @Binding var guidanceSettings: PhotoGuidanceSettings
+    let previewStore: CameraPreviewStore
+    let rawPreviewStore: CameraPreviewStore
+    let stylePreviewStore: StylePreviewStore
+    let stylePresets: [StylePreset]
+    let disabledStyleIDs: Set<StylePreset.ID>
+    let selectedStyleID: StylePreset.ID
+    let createStyle: (String, StyleParams) -> StylePreset
+    let updateStyle: (StylePreset.ID, String, StyleParams) -> StylePreset?
+    let setStyleEnabled: (StylePreset.ID, Bool) -> Bool
+    let setStyleEditorPreviewActive: (Bool) -> Void
     let currentStyleName: String
     let locationText: String?
     let requestLocation: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var navigationPath = [CameraSettingsRoute]()
     @State private var selectedWatermarkPhotoItem: PhotosPickerItem?
     @State private var watermarkImageImportError: String?
+    @State private var managedStylePresets = [StylePreset]()
+    @State private var managedDisabledStyleIDs = Set<StylePreset.ID>()
+    @State private var managedSelectedStyleID: StylePreset.ID?
+    @State private var styleEditorRequest: StyleEditorRequest?
+    @State private var staticStyleThumbnails = [StylePreset.ID: UIImage]()
 
     var body: some View {
-        NavigationStack {
-            Form {
-                watermarkSection
-                photoFrameSection
-                guidanceSection
-            }
-            .navigationTitle("设置")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成") {
-                        dismiss()
-                    }
+        NavigationStack(path: $navigationPath) {
+            settingsOverview
+                .navigationDestination(for: CameraSettingsRoute.self) { route in
+                    settingsDestination(for: route)
                 }
+        }
+        .onAppear {
+            guard managedStylePresets.isEmpty else { return }
+            managedStylePresets = stylePresets
+            managedDisabledStyleIDs = disabledStyleIDs
+            managedSelectedStyleID = selectedStyleID
+        }
+        .sheet(item: $styleEditorRequest) { request in
+            StyleEditorView(
+                preset: request.preset,
+                previewStore: rawPreviewStore,
+                isCreatingNew: request.createsNewStyle,
+                saveChanges: request.preset.isBuiltIn ? nil : saveStyleChanges,
+                saveAsNew: saveStyleAsNew
+            )
+            .presentationDetents([.large])
+            .onAppear {
+                setStyleEditorPreviewActive(true)
+            }
+            .onDisappear {
+                setStyleEditorPreviewActive(false)
             }
         }
     }
 
-    private var watermarkSection: some View {
-        Section {
-            Toggle("开启水印", isOn: $watermark.enabled)
-
-            if watermark.enabled {
-                Picker("模式", selection: $watermark.mode) {
-                    ForEach(WatermarkMode.allCases, id: \.self) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                switch watermark.mode {
-                case .manual:
-                    manualWatermarkControls
-                case .image:
-                    imageWatermarkControls
-                }
-
-                WatermarkPreviewView(
-                    watermark: watermark,
-                    styleName: currentStyleName,
-                    locationText: locationText
+    private var settingsOverview: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                SettingsFeatureLinkCard(
+                    title: "风格配置",
+                    summary: "预设管理 / 参数调整 / 自定义风格",
+                    iconName: "camera.filters",
+                    tint: Color(red: 0.12, green: 0.58, blue: 0.62),
+                    badge: "PRO",
+                    open: { navigationPath.append(.styles) }
                 )
-                .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+
+                SettingsFeatureCard(
+                    title: "水印",
+                    summary: "时间 / 位置 / 风格 / 自定义签名",
+                    iconName: "signature",
+                    tint: Color(red: 0.20, green: 0.43, blue: 0.96),
+                    isEnabled: $watermark.enabled,
+                    open: { navigationPath.append(.watermark) }
+                )
+
+                SettingsFeatureCard(
+                    title: "相框",
+                    summary: "白边 / 黑边 / 拍立得 / 胶片",
+                    iconName: "photo.on.rectangle.angled",
+                    tint: Color(red: 0.94, green: 0.55, blue: 0.16),
+                    isEnabled: $photoFrame.enabled,
+                    open: { navigationPath.append(.photoFrame) }
+                )
+
+                SettingsFeatureCard(
+                    title: "AI 指导",
+                    summary: "构图 / 光线 / 水平 / 清晰度提醒",
+                    iconName: "viewfinder",
+                    tint: Color(red: 0.18, green: 0.66, blue: 0.42),
+                    isEnabled: $guidanceSettings.isEnabled,
+                    open: { navigationPath.append(.guidance) }
+                )
             }
-        } header: {
-            Text("水印")
-        } footer: {
-            if !watermark.enabled {
-                Text("开启后可手动配置文字信息，或上传 PNG 图片作为水印。")
+            .padding(.horizontal, 16)
+            .padding(.vertical, 20)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("设置")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("完成") {
+                    dismiss()
+                }
             }
         }
     }
 
     @ViewBuilder
+    private func settingsDestination(for route: CameraSettingsRoute) -> some View {
+        switch route {
+        case .styles:
+            styleSettingsPage
+        case .watermark:
+            watermarkSettingsPage
+        case .photoFrame:
+            photoFrameSettingsPage
+        case .guidance:
+            guidanceSettingsPage
+        }
+    }
+
+    private var styleSettingsPage: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("拍摄风格")
+                            .font(.headline)
+                        Text("勾选的风格会显示在拍摄页滤镜列表中")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Text("PRO")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .frame(height: 24)
+                        .background(Color.blue, in: Capsule())
+                }
+
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ],
+                    spacing: 12
+                ) {
+                    ForEach(displayedStylePresets) { preset in
+                        StyleManagementCard(
+                            preset: preset,
+                            previewImage: styleCoverImage(for: preset),
+                            isEnabled: !managedDisabledStyleIDs.contains(preset.id),
+                            isCurrent: preset.id == effectiveSelectedStyleID,
+                            edit: {
+                                styleEditorRequest = StyleEditorRequest(
+                                    preset: preset,
+                                    createsNewStyle: false
+                                )
+                            },
+                            toggleEnabled: {
+                                toggleManagedStyle(preset)
+                            }
+                        )
+                    }
+
+                    AddCustomStyleCard {
+                        beginCreatingStyle()
+                    }
+                }
+
+                Label("至少需要保留一个可用风格。自定义风格会自动勾选。", systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 2)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("风格配置")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            captureMissingStaticThumbnails(from: stylePreviewStore.images)
+        }
+        .onReceive(stylePreviewStore.$images) { images in
+            captureMissingStaticThumbnails(from: images)
+        }
+    }
+
+    private var displayedStylePresets: [StylePreset] {
+        managedStylePresets.isEmpty ? stylePresets : managedStylePresets
+    }
+
+    private var effectiveSelectedStyleID: StylePreset.ID {
+        managedSelectedStyleID ?? selectedStyleID
+    }
+
+    private func toggleManagedStyle(_ preset: StylePreset) {
+        let shouldEnable = managedDisabledStyleIDs.contains(preset.id)
+        guard setStyleEnabled(preset.id, shouldEnable) else { return }
+
+        if shouldEnable {
+            managedDisabledStyleIDs.remove(preset.id)
+            return
+        }
+
+        managedDisabledStyleIDs.insert(preset.id)
+        if effectiveSelectedStyleID == preset.id,
+           let replacement = displayedStylePresets.first(where: {
+               !managedDisabledStyleIDs.contains($0.id)
+           }) {
+            managedSelectedStyleID = replacement.id
+        }
+    }
+
+    private func beginCreatingStyle() {
+        let basePreset = displayedStylePresets.first(where: { $0.id == effectiveSelectedStyleID })
+            ?? BuiltInPresets.original
+        styleEditorRequest = StyleEditorRequest(
+            preset: basePreset,
+            createsNewStyle: true
+        )
+    }
+
+    private func saveStyleAsNew(_ name: String, _ params: StyleParams) {
+        let preset = createStyle(name, params)
+        managedStylePresets.append(preset)
+        managedDisabledStyleIDs.remove(preset.id)
+        managedSelectedStyleID = preset.id
+    }
+
+    private func saveStyleChanges(
+        _ id: StylePreset.ID,
+        _ name: String,
+        _ params: StyleParams
+    ) {
+        guard let preset = updateStyle(id, name, params),
+              let index = managedStylePresets.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        managedStylePresets[index] = preset
+        staticStyleThumbnails[preset.id] = nil
+    }
+
+    private func captureMissingStaticThumbnails(
+        from images: [StylePreset.ID: UIImage]
+    ) {
+        for preset in displayedStylePresets where
+            fixedStyleCover(for: preset) == nil
+            && staticStyleThumbnails[preset.id] == nil {
+            if let image = images[preset.id] {
+                staticStyleThumbnails[preset.id] = image
+            }
+        }
+    }
+
+    private func styleCoverImage(for preset: StylePreset) -> UIImage? {
+        fixedStyleCover(for: preset) ?? staticStyleThumbnails[preset.id]
+    }
+
+    private func fixedStyleCover(for preset: StylePreset) -> UIImage? {
+        switch preset.id {
+        case BuiltInPresets.foodINS.id:
+            return UIImage(named: "food-ins-cover")
+        case BuiltInPresets.cityTexture.id:
+            return UIImage(named: "city-texture-cover")
+        default:
+            return nil
+        }
+    }
+
+    private var watermarkSettingsPage: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                SettingsToggleCard(title: "启用水印", isOn: $watermark.enabled)
+
+                if watermark.enabled {
+                    WatermarkModeSelector(selection: $watermark.mode)
+
+                    switch watermark.mode {
+                    case .manual:
+                        manualWatermarkControls
+                    case .image:
+                        imageWatermarkControls
+                    }
+
+                    SettingsSectionTitle("展示位置")
+                    SettingsDetailCard {
+                        WatermarkPositionPicker(selection: $watermark.position)
+
+                        Divider()
+
+                        SettingsSliderRow(
+                            title: "背景透明度",
+                            value: opacityBinding,
+                            range: 0.2...1,
+                            valueText: "\(Int((opacityBinding.wrappedValue * 100).rounded()))%"
+                        )
+
+                        if watermark.mode == .image {
+                            Divider()
+
+                            SettingsSliderRow(
+                                title: "图片大小",
+                                value: imageScaleBinding,
+                                range: 0.08...0.6,
+                                valueText: "\(Int((imageScaleBinding.wrappedValue * 100).rounded()))%"
+                            )
+                        }
+                    }
+
+                    SettingsSectionTitle("预览效果")
+                    WatermarkPreviewView(
+                        previewStore: previewStore,
+                        watermark: watermark,
+                        styleName: currentStyleName,
+                        locationText: locationText
+                    )
+                } else {
+                    SettingsDisabledHint(text: "开启后可手动组合文字信息，或从相册选择 PNG 图片作为水印。")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("水印")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
     private var manualWatermarkControls: some View {
-        Group {
-            TextField("文字", text: $watermark.text)
-            Toggle("显示风格", isOn: $watermark.includeStyleName)
-            Toggle("显示日期", isOn: $watermark.includeDate)
-            Toggle("显示设备", isOn: $watermark.includeDevice)
-            Toggle("显示位置", isOn: includeLocationBinding)
+        SettingsDetailCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("自定义签名")
+                    .font(.subheadline.weight(.semibold))
+
+                TextField("例如：我的旅拍", text: $watermark.text)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            Divider()
+
+            SettingsCompactToggle(title: "显示风格", isOn: $watermark.includeStyleName)
+            SettingsCompactToggle(title: "显示日期", isOn: $watermark.includeDate)
+            SettingsCompactToggle(title: "显示设备", isOn: $watermark.includeDevice)
+            SettingsCompactToggle(title: "显示位置", isOn: includeLocationBinding)
 
             if watermark.includeLocation {
-                TextField("位置文字", text: $watermark.locationOverrideText)
-                Text("留空使用当前定位：\(locationText ?? "等待定位")")
-                    .foregroundStyle(.secondary)
-                    .font(.footnote)
+                VStack(alignment: .leading, spacing: 6) {
+                    TextField("位置文字", text: $watermark.locationOverrideText)
+                        .textFieldStyle(.roundedBorder)
+                    Text("留空使用当前定位：\(locationText ?? "等待定位")")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
             }
         }
 
-        Group {
+        SettingsDetailCard {
             WatermarkTextColorPicker(selection: $watermark.textColor)
 
+            Divider()
+
             SettingsOptionGrid(
-                title: "样式",
+                title: "字体样式",
                 selection: $watermark.visualStyle,
                 options: WatermarkVisualStyle.allCases,
                 label: { $0.title }
             )
 
-            Picker("效果", selection: $watermark.effect) {
-                ForEach(WatermarkEffect.allCases, id: \.self) { effect in
-                    Text(effect.title).tag(effect)
-                }
-            }
-
-            SettingsOptionGrid(
-                title: "展示位置",
-                selection: $watermark.position,
-                options: WatermarkPosition.allCases,
-                label: { $0.title }
-            )
+            Divider()
 
             HStack {
-                Text("透明度")
-                Slider(value: opacityBinding, in: 0.2...1)
+                Text("阴影效果")
+                Spacer()
+                Picker("阴影效果", selection: $watermark.effect) {
+                    ForEach(WatermarkEffect.allCases, id: \.self) { effect in
+                        Text(effect.title).tag(effect)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
             }
         }
     }
 
     @ViewBuilder
     private var imageWatermarkControls: some View {
-        PhotosPicker(
-            selection: $selectedWatermarkPhotoItem,
-            matching: .images,
-            photoLibrary: .shared()
-        ) {
-            Label(
-                watermarkImage == nil ? "从相册选择水印" : "从相册更换水印",
-                systemImage: "photo.badge.plus"
-            )
-        }
-        .task(id: selectedWatermarkPhotoItem) {
-            guard let selectedWatermarkPhotoItem else { return }
-            await importWatermarkImage(from: selectedWatermarkPhotoItem)
-        }
+        SettingsDetailCard {
+            HStack(alignment: .top, spacing: 14) {
+                PhotosPicker(
+                    selection: $selectedWatermarkPhotoItem,
+                    matching: .images,
+                    photoLibrary: .shared()
+                ) {
+                    ZStack {
+                        if let watermarkImage {
+                            Image(uiImage: watermarkImage)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(16)
+                        } else {
+                            VStack(spacing: 10) {
+                                Image(systemName: "photo.badge.plus")
+                                    .font(.system(size: 30, weight: .medium))
+                                Text("尚未上传水印")
+                                    .font(.caption)
+                                Text("从相册选择")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 14)
+                                    .frame(height: 32)
+                                    .background(Color.blue, in: Capsule())
+                            }
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(width: 132, height: 150)
+                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(Color.secondary.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                    }
+                }
+                .buttonStyle(.plain)
+                .task(id: selectedWatermarkPhotoItem) {
+                    guard let selectedWatermarkPhotoItem else { return }
+                    await importWatermarkImage(from: selectedWatermarkPhotoItem)
+                }
 
-        if let watermarkImage {
-            HStack(spacing: 12) {
-                Image(uiImage: watermarkImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 58, height: 58)
-                    .padding(8)
-                    .background(.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("已选择水印图片")
-                        .font(.subheadline)
-                    Text("\(Int(watermarkImage.size.width)) x \(Int(watermarkImage.size.height))")
-                        .font(.footnote)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("图片水印")
+                        .font(.subheadline.weight(.semibold))
+                    Text("推荐使用透明背景 PNG，适合签名、Logo 或图形标记。")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                }
+                        .fixedSize(horizontal: false, vertical: true)
 
-                Spacer()
-            }
+                    if let watermarkImage {
+                        Text("\(Int(watermarkImage.size.width)) x \(Int(watermarkImage.size.height))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
 
-            Button(role: .destructive) {
-                watermark.imageData = nil
-            } label: {
-                Label("移除图片水印", systemImage: "trash")
-            }
-        } else {
-            Text("请从相册选择图片。推荐使用带透明背景的 PNG，适合用作签名、Logo 或图形水印。")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-
-        if let watermarkImageImportError {
-            Text(watermarkImageImportError)
-                .font(.footnote)
-                .foregroundStyle(.red)
-        }
-
-        SettingsOptionGrid(
-            title: "展示位置",
-            selection: $watermark.position,
-            options: WatermarkPosition.allCases,
-            label: { $0.title }
-        )
-
-        HStack {
-            Text("大小")
-            Slider(value: imageScaleBinding, in: 0.08...0.6)
-        }
-
-        HStack {
-            Text("透明度")
-            Slider(value: opacityBinding, in: 0.2...1)
-        }
-    }
-
-    private var photoFrameSection: some View {
-        Section {
-            Toggle("开启相框", isOn: $photoFrame.enabled)
-
-            if photoFrame.enabled {
-                Picker("样式", selection: $photoFrame.style) {
-                    ForEach(PhotoFrameStyle.allCases, id: \.self) { style in
-                        Text(style.title).tag(style)
+                        Button(role: .destructive) {
+                            watermark.imageData = nil
+                            selectedWatermarkPhotoItem = nil
+                        } label: {
+                            Label("移除图片", systemImage: "trash")
+                                .font(.caption.weight(.semibold))
+                        }
                     }
-                }
 
-                HStack {
-                    Text("强度")
-                    Slider(value: frameOpacityBinding, in: 0.45...1)
+                    Spacer(minLength: 0)
                 }
-
-                PhotoFramePreviewView(preset: photoFrame)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+                .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
             }
-        } header: {
-            Text("相框")
-        } footer: {
-            if !photoFrame.enabled {
-                Text("开启后可选择相框样式并调整强度。")
+
+            if let watermarkImageImportError {
+                Text(watermarkImageImportError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
     }
 
-    private var guidanceSection: some View {
-        Section {
-            Toggle("开启指导", isOn: $guidanceSettings.isEnabled)
+    private var photoFrameSettingsPage: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                SettingsToggleCard(title: "启用相框", isOn: $photoFrame.enabled)
 
-            if guidanceSettings.isEnabled {
-                Picker("提示强度", selection: $guidanceSettings.intensity) {
-                    ForEach(PhotoGuidanceIntensity.allCases, id: \.self) { intensity in
-                        Text(intensity.title).tag(intensity)
+                if photoFrame.enabled {
+                    SettingsSectionTitle("相框样式")
+                PhotoFrameStylePicker(selection: frameStyleBinding)
+
+                    SettingsDetailCard {
+                        SettingsSliderRow(
+                            title: "边框粗细",
+                            systemImage: "rectangle.inset.filled",
+                            value: frameBorderWidthBinding,
+                            range: 4...40,
+                            valueText: "\(Int(photoFrame.borderWidth.rounded()))"
+                        )
+
+                        Divider()
+
+                        SettingsSliderRow(
+                            title: "圆角半径",
+                            systemImage: "circle",
+                            value: frameCornerRadiusBinding,
+                            range: 0...30,
+                            valueText: "\(Int(photoFrame.cornerRadius.rounded()))"
+                        )
+
+                        Divider()
+
+                        SettingsCompactToggle(
+                            title: "阴影效果",
+                            systemImage: "hexagon",
+                            isOn: $photoFrame.shadowEnabled
+                        )
+
+                        Divider()
+
+                        PhotoFrameBackgroundColorPicker(selection: $photoFrame.backgroundColor)
                     }
-                }
 
-                Toggle("构图建议", isOn: $guidanceSettings.compositionEnabled)
-                Toggle("水平角度", isOn: $guidanceSettings.angleEnabled)
-                Toggle("光线提醒", isOn: $guidanceSettings.lightEnabled)
-                Toggle("清晰度提醒", isOn: $guidanceSettings.sharpnessEnabled)
-                Toggle("风格建议", isOn: $guidanceSettings.styleEnabled)
+                    SettingsSectionTitle("预览效果")
+                    PhotoFramePreviewView(previewStore: previewStore, preset: photoFrame)
+                } else {
+                    SettingsDisabledHint(text: "开启后可选择白边、黑边、拍立得、胶片或极简相框。")
+                }
             }
-        } header: {
-            Text("AI 拍照指导")
-        } footer: {
-            if !guidanceSettings.isEnabled {
-                Text("开启后可配置提示强度和建议类型。")
-            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
         }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("相框")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var guidanceSettingsPage: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                SettingsToggleCard(title: "启用 AI 指导", isOn: $guidanceSettings.isEnabled)
+
+                if guidanceSettings.isEnabled {
+                    SettingsDetailCard {
+                        HStack {
+                            Text("提示强度")
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text(guidanceSettings.intensity.title)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Slider(value: guidanceIntensityBinding, in: 0...2, step: 1)
+
+                        HStack {
+                            Text("低")
+                            Spacer()
+                            Text("中")
+                            Spacer()
+                            Text("高")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+
+                    SettingsSectionTitle("智能提示项")
+                    SettingsDetailCard(spacing: 0) {
+                        GuidanceToggleRow(
+                            title: "构图建议",
+                            summary: "智能识别主体与构图，推荐更佳画面",
+                            systemImage: "viewfinder",
+                            tint: .indigo,
+                            isOn: $guidanceSettings.compositionEnabled
+                        )
+                        Divider().padding(.leading, 52)
+                        GuidanceToggleRow(
+                            title: "水平角度",
+                            summary: "检测地平线，提示画面水平",
+                            systemImage: "level",
+                            tint: .gray,
+                            isOn: $guidanceSettings.angleEnabled
+                        )
+                        Divider().padding(.leading, 52)
+                        GuidanceToggleRow(
+                            title: "光线提醒",
+                            summary: "识别光线条件，提供曝光建议",
+                            systemImage: "sun.max.fill",
+                            tint: .orange,
+                            isOn: $guidanceSettings.lightEnabled
+                        )
+                        Divider().padding(.leading, 52)
+                        GuidanceToggleRow(
+                            title: "清晰度提醒",
+                            summary: "识别模糊风险，建议保持稳定",
+                            systemImage: "camera.metering.center.weighted",
+                            tint: .cyan,
+                            isOn: $guidanceSettings.sharpnessEnabled
+                        )
+                        Divider().padding(.leading, 52)
+                        GuidanceToggleRow(
+                            title: "风格提醒",
+                            summary: "识别场景风格，推荐滤镜与色调",
+                            systemImage: "paintpalette.fill",
+                            tint: .pink,
+                            isOn: $guidanceSettings.styleEnabled
+                        )
+                    }
+
+                    SettingsSectionTitle("预览效果")
+                    PhotoGuidancePreviewView(
+                        previewStore: previewStore,
+                        settings: guidanceSettings
+                    )
+                } else {
+                    SettingsDisabledHint(text: "开启后可选择构图、水平、光线、清晰度和风格提示。")
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle("AI 拍照指导")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var opacityBinding: Binding<Double> {
@@ -1371,10 +1836,74 @@ private struct CameraSettingsView: View {
         )
     }
 
-    private var frameOpacityBinding: Binding<Double> {
+    private var guidanceIntensityBinding: Binding<Double> {
         Binding(
-            get: { Double(photoFrame.opacity) },
-            set: { photoFrame.opacity = Float($0) }
+            get: {
+                switch guidanceSettings.intensity {
+                case .quiet: return 0
+                case .standard: return 1
+                case .active: return 2
+                }
+            },
+            set: { value in
+                switch Int(value.rounded()) {
+                case 0: guidanceSettings.intensity = .quiet
+                case 2: guidanceSettings.intensity = .active
+                default: guidanceSettings.intensity = .standard
+                }
+            }
+        )
+    }
+
+    private var frameStyleBinding: Binding<PhotoFrameStyle> {
+        Binding(
+            get: { photoFrame.style },
+            set: { newStyle in
+                var updated = photoFrame
+                updated.style = newStyle
+                switch newStyle {
+                case .cleanWhite:
+                    updated.backgroundColor = .white
+                    updated.borderWidth = 24
+                    updated.cornerRadius = 12
+                    updated.shadowEnabled = true
+                case .cleanBlack:
+                    updated.backgroundColor = .black
+                    updated.borderWidth = 24
+                    updated.cornerRadius = 12
+                    updated.shadowEnabled = true
+                case .instant:
+                    updated.backgroundColor = .white
+                    updated.borderWidth = 18
+                    updated.cornerRadius = 6
+                    updated.shadowEnabled = true
+                case .film:
+                    updated.backgroundColor = .black
+                    updated.borderWidth = 16
+                    updated.cornerRadius = 4
+                    updated.shadowEnabled = false
+                case .minimal:
+                    updated.backgroundColor = .white
+                    updated.borderWidth = 8
+                    updated.cornerRadius = 16
+                    updated.shadowEnabled = false
+                }
+                photoFrame = updated
+            }
+        )
+    }
+
+    private var frameBorderWidthBinding: Binding<Double> {
+        Binding(
+            get: { Double(photoFrame.borderWidth) },
+            set: { photoFrame.borderWidth = Float($0) }
+        )
+    }
+
+    private var frameCornerRadiusBinding: Binding<Double> {
+        Binding(
+            get: { Double(photoFrame.cornerRadius) },
+            set: { photoFrame.cornerRadius = Float($0) }
         )
     }
 
@@ -1436,6 +1965,707 @@ private struct CameraSettingsView: View {
             image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
         return normalizedImage.pngData()
+    }
+}
+
+private struct SettingsFeatureCard: View {
+    let title: String
+    let summary: String
+    let iconName: String
+    let tint: Color
+    @Binding var isEnabled: Bool
+    let open: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: open) {
+                HStack(spacing: 14) {
+                    Image(systemName: iconName)
+                        .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(tint)
+                        .frame(width: 54, height: 54)
+                        .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        Text(summary)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+
+                        Text(isEnabled ? "已启用" : "未启用")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(isEnabled ? Color.green : Color.secondary)
+                    }
+
+                    Spacer(minLength: 4)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Toggle("", isOn: $isEnabled)
+                .labelsHidden()
+                .accessibilityLabel("\(title)开关")
+
+            Button(action: open) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 28, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("进入\(title)设置")
+        }
+        .padding(14)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.13), lineWidth: 1)
+        }
+    }
+}
+
+private struct SettingsFeatureLinkCard: View {
+    let title: String
+    let summary: String
+    let iconName: String
+    let tint: Color
+    let badge: String?
+    let open: () -> Void
+
+    var body: some View {
+        Button(action: open) {
+            HStack(spacing: 14) {
+                Image(systemName: iconName)
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 54, height: 54)
+                    .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 7) {
+                        Text(title)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        if let badge {
+                            Text(badge)
+                                .font(.caption2.weight(.bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .frame(height: 19)
+                                .background(Color.blue, in: Capsule())
+                        }
+                    }
+
+                    Text(summary)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .frame(width: 28, height: 44)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.13), lineWidth: 1)
+        }
+    }
+}
+
+private struct StyleManagementCard: View {
+    let preset: StylePreset
+    let previewImage: UIImage?
+    let isEnabled: Bool
+    let isCurrent: Bool
+    let edit: () -> Void
+    let toggleEnabled: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Button(action: edit) {
+                VStack(alignment: .leading, spacing: 0) {
+                    preview
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 112)
+                        .clipped()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text(preset.name)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+
+                            if isCurrent {
+                                Text("当前")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(Color.blue)
+                            }
+                        }
+
+                        Text(preset.isBuiltIn ? "内置风格" : "我的风格 · PRO")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(10)
+                }
+                .frame(maxWidth: .infinity, minHeight: 166, alignment: .topLeading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button(action: toggleEnabled) {
+                Image(systemName: isEnabled ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 23, weight: .semibold))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(isEnabled ? Color.blue : Color.secondary, Color.white)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isEnabled ? "从拍摄滤镜中隐藏\(preset.name)" : "在拍摄滤镜中显示\(preset.name)")
+        }
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isCurrent ? Color.blue : Color.secondary.opacity(0.13), lineWidth: isCurrent ? 2 : 1)
+        }
+    }
+
+    @ViewBuilder
+    private var preview: some View {
+        if let previewImage {
+            Image(uiImage: previewImage)
+                .resizable()
+                .scaledToFill()
+        } else {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.22, green: 0.27, blue: 0.31),
+                        Color(red: 0.58, green: 0.64, blue: 0.66)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                ProgressView()
+                    .tint(.white)
+            }
+        }
+    }
+}
+
+private struct AddCustomStyleCard: View {
+    let add: () -> Void
+
+    var body: some View {
+        Button(action: add) {
+            VStack(spacing: 10) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 28, weight: .medium))
+                        .foregroundStyle(Color.blue)
+                        .frame(width: 58, height: 58)
+                        .background(Color.blue.opacity(0.1), in: Circle())
+
+                    Text("PRO")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .frame(height: 17)
+                        .background(Color.blue, in: Capsule())
+                        .offset(x: 12, y: -5)
+                }
+
+                Text("自定义风格")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.primary)
+
+                Text("新建并保存参数")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, minHeight: 166)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.blue.opacity(0.42), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+        }
+    }
+}
+
+private struct SettingsToggleCard: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            Text(title)
+                .font(.headline)
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 56)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+        }
+    }
+}
+
+private struct SettingsDetailCard<Content: View>: View {
+    let spacing: CGFloat
+    let content: Content
+
+    init(spacing: CGFloat = 12, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: spacing) {
+            content
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+        }
+    }
+}
+
+private struct SettingsSectionTitle: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 2)
+            .padding(.bottom, -6)
+    }
+}
+
+private struct SettingsDisabledHint: View {
+    let text: String
+
+    var body: some View {
+        Label {
+            Text(text)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            Image(systemName: "info.circle")
+        }
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+private struct WatermarkModeSelector: View {
+    @Binding var selection: WatermarkMode
+
+    var body: some View {
+        HStack(spacing: 4) {
+            modeButton(.image, title: "图片水印", systemImage: "photo")
+            modeButton(.manual, title: "手动配置", systemImage: "pencil")
+        }
+        .padding(4)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func modeButton(_ mode: WatermarkMode, title: String, systemImage: String) -> some View {
+        let isSelected = selection == mode
+
+        return Button {
+            selection = mode
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isSelected ? Color.blue : Color.primary)
+                .frame(maxWidth: .infinity, minHeight: 42)
+                .background(
+                    isSelected ? Color.blue.opacity(0.1) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 1.5)
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct SettingsCompactToggle: View {
+    let title: String
+    let systemImage: String?
+    @Binding var isOn: Bool
+
+    init(title: String, systemImage: String? = nil, isOn: Binding<Bool>) {
+        self.title = title
+        self.systemImage = systemImage
+        _isOn = isOn
+    }
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            HStack(spacing: 9) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22)
+                }
+                Text(title)
+                    .font(.subheadline)
+            }
+        }
+        .frame(minHeight: 34)
+    }
+}
+
+private struct SettingsSliderRow: View {
+    let title: String
+    let systemImage: String?
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let valueText: String
+
+    init(
+        title: String,
+        systemImage: String? = nil,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        valueText: String
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        _value = value
+        self.range = range
+        self.valueText = valueText
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 7) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20)
+                }
+                Text(title)
+                    .font(.subheadline)
+                    .lineLimit(1)
+            }
+            .frame(width: systemImage == nil ? 86 : 104, alignment: .leading)
+
+            Button {
+                value = max(range.lowerBound, value - adjustmentStep)
+            } label: {
+                Image(systemName: "minus")
+                    .frame(width: 24, height: 32)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("减小\(title)")
+
+            Slider(value: $value, in: range)
+
+            Button {
+                value = min(range.upperBound, value + adjustmentStep)
+            } label: {
+                Image(systemName: "plus")
+                    .frame(width: 24, height: 32)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("增大\(title)")
+
+            Text(valueText)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 38, alignment: .trailing)
+        }
+    }
+
+    private var adjustmentStep: Double {
+        (range.upperBound - range.lowerBound) / 20
+    }
+}
+
+private struct WatermarkPositionPicker: View {
+    @Binding var selection: WatermarkPosition
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 4) {
+            ForEach(WatermarkPosition.allCases, id: \.self) { position in
+                let isSelected = selection == position
+
+                Button {
+                    selection = position
+                } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: position.settingsIconName)
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 42, height: 38)
+                            .background(
+                                isSelected ? Color.blue.opacity(0.1) : Color(uiColor: .tertiarySystemGroupedBackground),
+                                in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .stroke(isSelected ? Color.blue : Color.secondary.opacity(0.15), lineWidth: isSelected ? 1.5 : 1)
+                            }
+
+                        Text(position.title)
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .foregroundStyle(isSelected ? Color.blue : Color.secondary)
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+    }
+}
+
+private struct GuidanceToggleRow: View {
+    let title: String
+    let summary: String
+    let systemImage: String
+    let tint: Color
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, height: 36)
+                    .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.subheadline.weight(.semibold))
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+        }
+        .padding(.vertical, 9)
+    }
+}
+
+private struct PhotoFrameStylePicker: View {
+    @Binding var selection: PhotoFrameStyle
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(PhotoFrameStyle.allCases, id: \.self) { style in
+                    let isSelected = style == selection
+
+                    Button {
+                        selection = style
+                    } label: {
+                        VStack(spacing: 7) {
+                            PhotoFrameStyleThumbnail(style: style)
+                                .frame(width: 64, height: 82)
+                                .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .stroke(
+                                            isSelected ? Color.blue : Color.secondary.opacity(0.18),
+                                            lineWidth: isSelected ? 2 : 1
+                                        )
+                                }
+
+                            Text(style.shortTitle)
+                                .font(.caption)
+                                .fontWeight(isSelected ? .semibold : .regular)
+                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                                .frame(width: 64)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("选择\(style.title)")
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+    }
+}
+
+private struct PhotoFrameStyleThumbnail: View {
+    let style: PhotoFrameStyle
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .tertiarySystemGroupedBackground)
+
+            frameColor
+                .frame(width: frameWidth, height: frameHeight)
+                .clipShape(RoundedRectangle(cornerRadius: style == .minimal ? 8 : 4, style: .continuous))
+                .shadow(color: .black.opacity(style == .film ? 0 : 0.16), radius: 3, x: 0, y: 2)
+
+            LinearGradient(
+                colors: [Color(red: 0.72, green: 0.86, blue: 0.97), Color(red: 0.24, green: 0.67, blue: 0.88)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(width: imageWidth, height: imageHeight)
+            .clipShape(RoundedRectangle(cornerRadius: style == .minimal ? 5 : 2, style: .continuous))
+
+            if style == .film {
+                HStack {
+                    filmRail
+                    Spacer()
+                    filmRail
+                }
+                .frame(width: frameWidth, height: frameHeight)
+            }
+
+            if style == .instant {
+                Circle()
+                    .fill(.black.opacity(0.12))
+                    .frame(width: 3, height: 3)
+                    .offset(y: 29)
+            }
+        }
+    }
+
+    private var frameColor: Color {
+        switch style {
+        case .cleanBlack, .film: return .black
+        case .cleanWhite, .instant, .minimal: return .white
+        }
+    }
+
+    private var frameWidth: CGFloat {
+        style == .film ? 52 : 48
+    }
+
+    private var frameHeight: CGFloat {
+        style == .instant ? 66 : 62
+    }
+
+    private var imageWidth: CGFloat {
+        switch style {
+        case .film: return 34
+        case .minimal: return 42
+        case .cleanWhite, .cleanBlack, .instant: return 38
+        }
+    }
+
+    private var imageHeight: CGFloat {
+        style == .instant ? 43 : 48
+    }
+
+    private var filmRail: some View {
+        VStack(spacing: 3) {
+            ForEach(0..<5, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(.white.opacity(0.42))
+                    .frame(width: 3, height: 5)
+            }
+        }
+        .frame(width: 8)
+    }
+}
+
+private struct FrameValueSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(title)
+                .frame(width: 76, alignment: .leading)
+
+            Slider(value: $value, in: range)
+
+            Text("\(Int(value.rounded()))")
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .frame(width: 30, alignment: .trailing)
+        }
+    }
+}
+
+private struct PhotoFrameBackgroundColorPicker: View {
+    @Binding var selection: PhotoFrameBackgroundColor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("背景颜色")
+
+            HStack(spacing: 12) {
+                ForEach(PhotoFrameBackgroundColor.allCases, id: \.self) { color in
+                    let isSelected = color == selection
+
+                    Button {
+                        selection = color
+                    } label: {
+                        Circle()
+                            .fill(color.color)
+                            .frame(width: 30, height: 30)
+                            .overlay {
+                                Circle()
+                                    .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
+                            }
+                            .padding(3)
+                            .overlay {
+                                Circle()
+                                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(color.title)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 
@@ -1503,12 +2733,34 @@ private struct SettingsOptionGrid<Option: Hashable>: View {
 }
 
 private struct WatermarkPreviewView: View {
+    @ObservedObject var previewStore: CameraPreviewStore
     let watermark: WatermarkPreset
     let styleName: String
     let locationText: String?
 
     var body: some View {
         ZStack(alignment: alignment) {
+            previewBackground
+
+            if watermark.enabled {
+                previewWatermark
+                    .padding(14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+            }
+        }
+        .frame(height: 210)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var previewBackground: some View {
+        if let image = previewStore.image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        } else {
             LinearGradient(
                 colors: [
                     Color(red: 0.52, green: 0.60, blue: 0.62),
@@ -1518,19 +2770,7 @@ private struct WatermarkPreviewView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .overlay {
-                GridOverlayView()
-                    .opacity(0.35)
-            }
-
-            if watermark.enabled {
-                previewWatermark
-                    .padding(14)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-            }
         }
-        .frame(height: 160)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     @ViewBuilder
@@ -1681,10 +2921,32 @@ private struct WatermarkPreviewView: View {
 }
 
 private struct PhotoFramePreviewView: View {
+    @ObservedObject var previewStore: CameraPreviewStore
     let preset: PhotoFramePreset
 
     var body: some View {
         ZStack {
+            previewBackground
+                .padding(contentPadding)
+
+            LiveFrameOverlayView(preset: preset)
+        }
+        .frame(height: 230)
+        .background(frameBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(14)
+        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var previewBackground: some View {
+        if let image = previewStore.image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        } else {
             LinearGradient(
                 colors: [
                     Color(red: 0.72, green: 0.84, blue: 0.90),
@@ -1694,33 +2956,111 @@ private struct PhotoFramePreviewView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .padding(contentPadding)
-
-            LiveFrameOverlayView(preset: preset)
         }
-        .frame(height: 160)
-        .background(frameBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var contentPadding: EdgeInsets {
+        let border = CGFloat(preset.borderWidth)
         switch preset.style {
         case .cleanWhite, .cleanBlack:
-            return EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
+            return EdgeInsets(top: border, leading: border, bottom: border, trailing: border)
         case .instant:
-            return EdgeInsets(top: 12, leading: 12, bottom: 42, trailing: 12)
+            return EdgeInsets(top: border, leading: border, bottom: border * 3.1, trailing: border)
         case .film:
-            return EdgeInsets(top: 10, leading: 28, bottom: 10, trailing: 28)
+            return EdgeInsets(top: border * 0.9, leading: border * 1.8, bottom: border * 0.9, trailing: border * 1.8)
+        case .minimal:
+            let minimalBorder = border * 0.55
+            return EdgeInsets(
+                top: minimalBorder,
+                leading: minimalBorder,
+                bottom: minimalBorder,
+                trailing: minimalBorder
+            )
         }
     }
 
     private var frameBackground: Color {
-        switch preset.style {
-        case .cleanWhite, .instant:
-            return Color.white.opacity(Double(preset.opacity))
-        case .cleanBlack, .film:
-            return Color.black.opacity(Double(preset.opacity))
+        preset.backgroundColor.color.opacity(Double(preset.opacity))
+    }
+}
+
+private struct PhotoGuidancePreviewView: View {
+    @ObservedObject var previewStore: CameraPreviewStore
+    let settings: PhotoGuidanceSettings
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            previewBackground
+
+            GridOverlayView()
+                .opacity(0.62)
+
+            VStack(alignment: .leading, spacing: 8) {
+                if settings.angleEnabled {
+                    GuidancePreviewChip(
+                        title: "画面稍微向右",
+                        systemImage: "level",
+                        tint: .blue
+                    )
+                }
+                if settings.lightEnabled {
+                    GuidancePreviewChip(
+                        title: "光线偏暗",
+                        systemImage: "sun.max.fill",
+                        tint: .yellow
+                    )
+                }
+                if settings.compositionEnabled {
+                    GuidancePreviewChip(
+                        title: "主体可再靠近三分线",
+                        systemImage: "viewfinder",
+                        tint: .green
+                    )
+                }
+            }
+            .padding(12)
         }
+        .frame(height: 270)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private var previewBackground: some View {
+        if let image = previewStore.image {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+        } else {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.32, green: 0.50, blue: 0.58),
+                    Color(red: 0.12, green: 0.20, blue: 0.27)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+}
+
+private struct GuidancePreviewChip: View {
+    let title: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(tint == .yellow ? Color.black.opacity(0.78) : Color.white)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 32)
+            .background(tint.opacity(0.86), in: Capsule())
     }
 }
 
@@ -1744,6 +3084,17 @@ private extension WatermarkPosition {
         case .custom: return "自由拖动"
         }
     }
+
+    var settingsIconName: String {
+        switch self {
+        case .topLeft: return "arrow.up.left"
+        case .topRight: return "arrow.up.right"
+        case .bottomLeft: return "arrow.down.left"
+        case .bottomRight: return "arrow.down.right"
+        case .bottomCenter: return "arrow.down.to.line.compact"
+        case .custom: return "move.3d"
+        }
+    }
 }
 
 private extension PhotoFrameStyle {
@@ -1753,6 +3104,41 @@ private extension PhotoFrameStyle {
         case .cleanBlack: return "简约黑边"
         case .instant: return "拍立得"
         case .film: return "胶片边"
+        case .minimal: return "极简"
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .cleanWhite: return "白边"
+        case .cleanBlack: return "黑边"
+        case .instant: return "拍立得"
+        case .film: return "胶片"
+        case .minimal: return "极简"
+        }
+    }
+}
+
+private extension PhotoFrameBackgroundColor {
+    var title: String {
+        switch self {
+        case .white: return "白色"
+        case .lightGray: return "浅灰"
+        case .black: return "黑色"
+        case .cream: return "奶油"
+        case .pink: return "粉色"
+        case .mint: return "薄荷"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .white: return Color(white: 0.98)
+        case .lightGray: return Color(red: 0.88, green: 0.89, blue: 0.91)
+        case .black: return Color(white: 0.03)
+        case .cream: return Color(red: 0.96, green: 0.84, blue: 0.67)
+        case .pink: return Color(red: 0.96, green: 0.84, blue: 0.90)
+        case .mint: return Color(red: 0.78, green: 0.94, blue: 0.86)
         }
     }
 }
@@ -1826,9 +3212,9 @@ private extension WatermarkEffect {
 private extension PhotoGuidanceIntensity {
     var title: String {
         switch self {
-        case .quiet: return "安静"
-        case .standard: return "标准"
-        case .active: return "积极"
+        case .quiet: return "低"
+        case .standard: return "中等"
+        case .active: return "高"
         }
     }
 }
@@ -2163,8 +3549,12 @@ private enum LensZoomScale {
     static let minZoom: CGFloat = 0.5
     static let maxZoom: CGFloat = 10
 
+    static func clampedZoom(_ zoom: CGFloat) -> CGFloat {
+        min(maxZoom, max(minZoom, zoom))
+    }
+
     static func progress(for zoom: CGFloat) -> CGFloat {
-        let clampedZoom = min(maxZoom, max(minZoom, zoom))
+        let clampedZoom = clampedZoom(zoom)
         return log(clampedZoom / minZoom) / log(maxZoom / minZoom)
     }
 
@@ -2178,7 +3568,7 @@ private enum LensZoomScale {
     }
 
     static func roundedZoom(_ zoom: CGFloat) -> CGFloat {
-        (min(maxZoom, max(minZoom, zoom)) * 10).rounded() / 10
+        (clampedZoom(zoom) * 10).rounded() / 10
     }
 
     static func focalLength(for zoom: CGFloat) -> CGFloat {

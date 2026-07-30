@@ -45,7 +45,7 @@ enum CaptureAspectRatio: String, CaseIterable, Identifiable, Codable {
 
 @MainActor
 final class CameraPreviewStore: ObservableObject {
-    @Published fileprivate(set) var image: UIImage?
+    @Published private(set) var image: UIImage?
 
     fileprivate func publish(_ image: UIImage) {
         self.image = image
@@ -59,10 +59,15 @@ final class StylePreviewStore: ObservableObject {
     fileprivate func publish(_ images: [StylePreset.ID: UIImage]) {
         self.images = images
     }
+
+    fileprivate func reset() {
+        images = [:]
+    }
 }
 
 private struct LivePreviewRenderResult {
     let image: UIImage
+    let rawImage: UIImage?
     let guidanceHint: PhotoGuidanceHint?
 }
 
@@ -70,6 +75,7 @@ private final class LivePreviewRenderWorker: @unchecked Sendable {
     private let renderer = StyleRenderer()
     private let guidanceAnalyzer = CompositionGuideAnalyzer()
     private let guidanceEngine = PhotoGuidanceEngine()
+    private let maximumEditorPreviewDimension: CGFloat = 1_000
 
     func render(
         image: CIImage,
@@ -78,6 +84,7 @@ private final class LivePreviewRenderWorker: @unchecked Sendable {
         guidanceSettings: PhotoGuidanceSettings,
         rollDegrees: Double,
         shouldAnalyzeGuidance: Bool,
+        includeRawImage: Bool,
         screenScale: CGFloat
     ) -> LivePreviewRenderResult? {
         let output = renderer.applyStyle(to: image, params: params)
@@ -98,8 +105,32 @@ private final class LivePreviewRenderWorker: @unchecked Sendable {
             return nil
         }
 
+        let rawImage: UIImage?
+        if includeRawImage {
+            var normalizedInput = renderer.normalized(image)
+            let longestSide = max(normalizedInput.extent.width, normalizedInput.extent.height)
+            if longestSide > maximumEditorPreviewDimension {
+                let scale = maximumEditorPreviewDimension / longestSide
+                normalizedInput = normalizedInput.transformed(
+                    by: CGAffineTransform(scaleX: scale, y: scale)
+                )
+            }
+
+            if let rawCGImage = renderer.context.createCGImage(
+                normalizedInput,
+                from: normalizedInput.extent
+            ) {
+                rawImage = UIImage(cgImage: rawCGImage, scale: screenScale, orientation: .up)
+            } else {
+                rawImage = nil
+            }
+        } else {
+            rawImage = nil
+        }
+
         return LivePreviewRenderResult(
             image: UIImage(cgImage: cgImage, scale: screenScale, orientation: .up),
+            rawImage: rawImage,
             guidanceHint: hint
         )
     }
@@ -184,6 +215,7 @@ private final class StylePreviewRenderWorker: @unchecked Sendable {
 @MainActor
 final class CameraViewModel: ObservableObject {
     @Published var selectedStyleName = BuiltInPresets.foodINS.name
+    @Published private(set) var disabledStyleIDs = Set<StylePreset.ID>()
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var showGrid = true
     @Published var watermark: WatermarkPreset {
@@ -223,6 +255,7 @@ final class CameraViewModel: ObservableObject {
 
     let selection: StyleSelectionModel
     let previewStore = CameraPreviewStore()
+    let rawPreviewStore = CameraPreviewStore()
     let stylePreviewStore = StylePreviewStore()
 
     private let cameraEngine = CameraEngine()
@@ -239,6 +272,7 @@ final class CameraViewModel: ObservableObject {
     private var lastGuidanceAnalysisAt: TimeInterval = 0
     private var lastGuidanceDisplayAt: TimeInterval = 0
     private var isStylePreviewComparisonActive = false
+    private var isStyleEditorPreviewActive = false
     private var isPreviewRenderInFlight = false
     private var isStylePreviewRenderInFlight = false
     private var latestPreviewSource: CIImage?
@@ -255,6 +289,14 @@ final class CameraViewModel: ObservableObject {
             presets: BuiltInPresets.all + Self.loadCustomStylePresets(),
             selectedIndex: 1
         )
+        disabledStyleIDs = Self.loadDisabledStyleIDs().intersection(selection.presets.map(\.id))
+        if disabledStyleIDs.count == selection.presets.count {
+            disabledStyleIDs.remove(BuiltInPresets.original.id)
+        }
+        if disabledStyleIDs.contains(selection.selectedPreset.id),
+           let firstVisiblePreset = visibleStylePresets.first {
+            selection.selectPreset(id: firstVisiblePreset.id)
+        }
         selectedStyleName = selection.selectedPreset.name
 
         locationService.onLocationTextChange = { [weak self] text in
@@ -364,8 +406,17 @@ final class CameraViewModel: ObservableObject {
     }
 
     func setZoom(_ zoom: CGFloat) {
-        selectedLens = zoom
-        cameraEngine.setZoomFactor(zoom)
+        applyZoom(zoom, animated: true)
+    }
+
+    func setZoomInteractively(_ zoom: CGFloat) {
+        applyZoom(zoom, animated: false)
+    }
+
+    private func applyZoom(_ zoom: CGFloat, animated: Bool) {
+        let clampedZoom = min(10, max(0.5, zoom))
+        selectedLens = clampedZoom
+        cameraEngine.setZoomFactor(clampedZoom, animated: animated)
     }
 
     func updateWatermarkAnchor(_ unitPoint: CGPoint) {
@@ -392,22 +443,37 @@ final class CameraViewModel: ObservableObject {
         }
     }
 
+    func setStyleEditorPreviewActive(_ isActive: Bool) {
+        isStyleEditorPreviewActive = isActive
+        if isActive {
+            startLivePreviewRenderIfNeeded()
+        }
+    }
+
+    var visibleStylePresets: [StylePreset] {
+        selection.presets.filter { !disabledStyleIDs.contains($0.id) }
+    }
+
     func selectNextStyle() {
-        selection.selectNext()
-        selectedStyleName = selection.selectedPreset.name
+        selectRelativeStyle(offset: 1)
     }
 
     func selectPreviousStyle() {
-        selection.selectPrevious()
-        selectedStyleName = selection.selectedPreset.name
+        selectRelativeStyle(offset: -1)
     }
 
     func selectStyle(id: StylePreset.ID) {
+        guard !disabledStyleIDs.contains(id) else { return }
         selection.selectPreset(id: id)
         selectedStyleName = selection.selectedPreset.name
     }
 
     func saveCustomStyle(name: String, params: StyleParams) {
+        _ = createCustomStyle(name: name, params: params)
+    }
+
+    @discardableResult
+    func createCustomStyle(name: String, params: StyleParams) -> StylePreset {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let preset = StylePreset(
             name: trimmedName.isEmpty ? "\(selection.selectedPreset.name) 副本" : trimmedName,
@@ -415,8 +481,78 @@ final class CameraViewModel: ObservableObject {
             isBuiltIn: false
         )
         selection.appendAndSelect(preset)
+        disabledStyleIDs.remove(preset.id)
         selectedStyleName = selection.selectedPreset.name
         Self.saveCustomStylePresets(selection.presets.filter { !$0.isBuiltIn })
+        Self.saveDisabledStyleIDs(disabledStyleIDs)
+        refreshStylePreviewImages()
+        return preset
+    }
+
+    @discardableResult
+    func updateCustomStyle(
+        id: StylePreset.ID,
+        name: String,
+        params: StyleParams
+    ) -> StylePreset? {
+        guard let existingPreset = selection.presets.first(where: { $0.id == id }),
+              !existingPreset.isBuiltIn else {
+            return nil
+        }
+
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let updatedPreset = StylePreset(
+            id: existingPreset.id,
+            name: trimmedName.isEmpty ? existingPreset.name : trimmedName,
+            params: params,
+            watermark: existingPreset.watermark,
+            isBuiltIn: false
+        )
+        selection.replacePreset(id: id, with: updatedPreset)
+        if selection.selectedPreset.id == id {
+            selectedStyleName = updatedPreset.name
+        }
+        Self.saveCustomStylePresets(selection.presets.filter { !$0.isBuiltIn })
+        refreshStylePreviewImages()
+        return updatedPreset
+    }
+
+    @discardableResult
+    func setStyleEnabled(id: StylePreset.ID, isEnabled: Bool) -> Bool {
+        let isCurrentlyEnabled = !disabledStyleIDs.contains(id)
+        guard isCurrentlyEnabled != isEnabled else { return true }
+        guard selection.presets.contains(where: { $0.id == id }) else { return false }
+
+        if !isEnabled, visibleStylePresets.count <= 1 {
+            return false
+        }
+
+        if isEnabled {
+            disabledStyleIDs.remove(id)
+        } else {
+            disabledStyleIDs.insert(id)
+            if selection.selectedPreset.id == id,
+               let replacement = visibleStylePresets.first {
+                selection.selectPreset(id: replacement.id)
+                selectedStyleName = replacement.name
+            }
+        }
+
+        Self.saveDisabledStyleIDs(disabledStyleIDs)
+        return true
+    }
+
+    private func selectRelativeStyle(offset: Int) {
+        let presets = visibleStylePresets
+        guard !presets.isEmpty else { return }
+        let currentIndex = presets.firstIndex(where: { $0.id == selection.selectedPreset.id }) ?? 0
+        let nextIndex = (currentIndex + offset + presets.count) % presets.count
+        selectStyle(id: presets[nextIndex].id)
+    }
+
+    private func refreshStylePreviewImages() {
+        stylePreviewRenderGeneration += 1
+        stylePreviewStore.reset()
     }
 
     private func renderPreview(_ image: CIImage) {
@@ -442,6 +578,7 @@ final class CameraViewModel: ObservableObject {
         let guidanceSettings = guidanceSettings
         let rollDegrees = currentRollDegrees
         let shouldAnalyzeGuidance = guidanceSettings.isEnabled && shouldRunGuidanceAnalysis()
+        let includeRawImage = isStyleEditorPreviewActive
         let screenScale = UIScreen.main.scale
         let worker = livePreviewRenderWorker
 
@@ -453,6 +590,7 @@ final class CameraViewModel: ObservableObject {
                 guidanceSettings: guidanceSettings,
                 rollDegrees: rollDegrees,
                 shouldAnalyzeGuidance: shouldAnalyzeGuidance,
+                includeRawImage: includeRawImage,
                 screenScale: screenScale
             )
 
@@ -462,6 +600,9 @@ final class CameraViewModel: ObservableObject {
 
                 if let result {
                     self.previewStore.publish(result.image)
+                    if let rawImage = result.rawImage {
+                        self.rawPreviewStore.publish(rawImage)
+                    }
                     if shouldAnalyzeGuidance {
                         self.publishGuidanceHint(result.guidanceHint)
                     }
@@ -633,6 +774,7 @@ final class CameraViewModel: ObservableObject {
     private static let watermarkSettingsKey = "stylecamera.watermark.settings"
     private static let photoFrameSettingsKey = "stylecamera.photo.frame.settings"
     private static let customStyleSettingsKey = "stylecamera.custom.styles"
+    private static let disabledStyleSettingsKey = "stylecamera.disabled.styles"
     private static let guidanceSettingsKey = "stylecamera.photo.guidance.settings"
     private static let captureAspectRatioSettingsKey = "stylecamera.capture.aspectRatio"
 
@@ -719,6 +861,15 @@ final class CameraViewModel: ObservableObject {
             return
         }
         UserDefaults.standard.set(data, forKey: customStyleSettingsKey)
+    }
+
+    private static func loadDisabledStyleIDs() -> Set<StylePreset.ID> {
+        let rawIDs = UserDefaults.standard.stringArray(forKey: disabledStyleSettingsKey) ?? []
+        return Set(rawIDs.compactMap(UUID.init(uuidString:)))
+    }
+
+    private static func saveDisabledStyleIDs(_ ids: Set<StylePreset.ID>) {
+        UserDefaults.standard.set(ids.map(\.uuidString).sorted(), forKey: disabledStyleSettingsKey)
     }
 
     private static func loadGuidanceSettings() -> PhotoGuidanceSettings {

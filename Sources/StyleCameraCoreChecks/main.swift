@@ -68,6 +68,15 @@ expect(model.selectedPreset.name == "我的风格", "append custom style selects
 model.replaceSelectedPreset(with: StylePreset(name: "我的风格 2", params: StyleParams(exposure: 20), isBuiltIn: false))
 expect(model.selectedPreset.name == "我的风格 2", "replace selected style")
 expect(model.selectedPreset.params.exposure == 20, "replace selected style params")
+let updatedCustomPreset = StylePreset(
+    id: model.selectedPreset.id,
+    name: "我的风格 3",
+    params: StyleParams(exposure: 28),
+    isBuiltIn: false
+)
+model.replacePreset(id: updatedCustomPreset.id, with: updatedCustomPreset)
+expect(model.selectedPreset.name == "我的风格 3", "replace style by id")
+expect(model.selectedPreset.params.exposure == 28, "replace style by id params")
 
 let input = CIImage(color: CIColor(red: 0.4, green: 0.5, blue: 0.6))
     .cropped(to: CGRect(x: 0, y: 0, width: 12, height: 18))
@@ -154,12 +163,42 @@ let photoFrameDefaults = PhotoFramePreset()
 expect(photoFrameDefaults.enabled == false, "default photo frame disabled")
 expect(photoFrameDefaults.style == .cleanWhite, "default photo frame style")
 expect(photoFrameDefaults.opacity == 1, "default photo frame opacity")
+expect(photoFrameDefaults.borderWidth == 24, "default photo frame border width")
+expect(photoFrameDefaults.cornerRadius == 12, "default photo frame corner radius")
+expect(photoFrameDefaults.shadowEnabled, "default photo frame shadow")
+expect(photoFrameDefaults.backgroundColor == .white, "default photo frame background")
 expect(PhotoFramePreset(enabled: true, style: .film, opacity: 3).opacity == 1, "photo frame opacity upper clamp")
 expect(PhotoFramePreset(enabled: true, style: .film, opacity: -1).opacity == 0, "photo frame opacity lower clamp")
+expect(PhotoFramePreset(borderWidth: 80).borderWidth == 40, "photo frame border width upper clamp")
+expect(PhotoFramePreset(borderWidth: 0).borderWidth == 4, "photo frame border width lower clamp")
+expect(PhotoFramePreset(cornerRadius: 80).cornerRadius == 30, "photo frame corner radius upper clamp")
 expect(
-    PhotoFrameStyle.allCases == [.cleanWhite, .cleanBlack, .instant, .film],
+    PhotoFrameStyle.allCases == [.cleanWhite, .cleanBlack, .instant, .film, .minimal],
     "photo frame style options"
 )
+expect(
+    PhotoFrameBackgroundColor.allCases == [.white, .lightGray, .black, .cream, .pink, .mint],
+    "photo frame background options"
+)
+let legacyPhotoFrameJSON = #"{"enabled":true,"style":"cleanBlack","opacity":0.8}"#.data(using: .utf8)!
+let legacyPhotoFrame = try? JSONDecoder().decode(PhotoFramePreset.self, from: legacyPhotoFrameJSON)
+expect(legacyPhotoFrame?.backgroundColor == .black, "legacy black frame background migration")
+expect(legacyPhotoFrame?.borderWidth == 24, "legacy photo frame border width migration")
+let encodedPhotoFrame = try? JSONEncoder().encode(
+    PhotoFramePreset(
+        enabled: true,
+        style: .minimal,
+        opacity: 0.9,
+        borderWidth: 10,
+        cornerRadius: 18,
+        shadowEnabled: false,
+        backgroundColor: .mint
+    )
+)
+let decodedPhotoFrame = encodedPhotoFrame.flatMap { try? JSONDecoder().decode(PhotoFramePreset.self, from: $0) }
+expect(decodedPhotoFrame?.style == .minimal, "photo frame style round trip")
+expect(decodedPhotoFrame?.backgroundColor == .mint, "photo frame background round trip")
+expect(decodedPhotoFrame?.cornerRadius == 18, "photo frame corner radius round trip")
 
 let guidanceDefaults = PhotoGuidanceSettings()
 expect(guidanceDefaults.isEnabled, "photo guidance is enabled by default")

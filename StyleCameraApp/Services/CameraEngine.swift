@@ -57,10 +57,14 @@ final class CameraEngine: NSObject {
     }
 
     func setZoomFactor(_ zoomFactor: CGFloat) {
+        setZoomFactor(zoomFactor, animated: true)
+    }
+
+    func setZoomFactor(_ zoomFactor: CGFloat, animated: Bool) {
         sessionQueue.async {
             self.requestedZoomFactor = zoomFactor
             guard let device = self.currentInput?.device else { return }
-            self.applyDisplayedZoomFactor(zoomFactor, to: device, animated: true)
+            self.applyDisplayedZoomFactor(zoomFactor, to: device, animated: animated)
         }
     }
 
@@ -171,6 +175,9 @@ final class CameraEngine: NSObject {
                 device.cancelVideoZoomRamp()
                 device.ramp(toVideoZoomFactor: hardwareZoomFactor, withRate: 18)
             } else {
+                if device.isRampingVideoZoom {
+                    device.cancelVideoZoomRamp()
+                }
                 device.videoZoomFactor = hardwareZoomFactor
             }
             device.unlockForConfiguration()

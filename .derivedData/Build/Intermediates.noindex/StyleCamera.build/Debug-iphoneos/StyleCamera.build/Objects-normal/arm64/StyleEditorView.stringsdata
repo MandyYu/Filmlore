@@ -4,42 +4,82 @@
     "Localizable": [
       {
         "comment": "",
+        "key": "新建风格",
+        "location": {
+          "startingColumn": 46,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
         "key": "编辑风格",
         "location": {
+          "startingColumn": 63,
+          "startingLine": 123
+        }
+      },
+      {
+        "comment": "",
+        "key": "实时效果",
+        "location": {
           "startingColumn": 30,
-          "startingLine": 57
+          "startingLine": 60
         }
       },
       {
         "comment": "",
         "key": "风格",
         "location": {
-          "startingColumn": 25,
-          "startingLine": 25
+          "startingColumn": 29,
+          "startingLine": 77
         }
       },
       {
         "comment": "",
         "key": "参数",
         "location": {
-          "startingColumn": 25,
-          "startingLine": 29
+          "startingColumn": 29,
+          "startingLine": 81
         }
       },
       {
         "comment": "",
         "key": "名称",
         "location": {
-          "startingColumn": 31,
-          "startingLine": 26
+          "startingColumn": 35,
+          "startingLine": 78
         }
       },
       {
         "comment": "",
-        "key": "保存为我的风格",
+        "key": "保存修改",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 105
+        }
+      },
+      {
+        "comment": "",
+        "key": "保存新风格",
+        "location": {
+          "startingColumn": 50,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "另存为新风格",
+        "location": {
+          "startingColumn": 70,
+          "startingLine": 114
+        }
+      },
+      {
+        "comment": "",
+        "key": "自定义风格属于 StyleCamera Pro 功能。",
         "location": {
           "startingColumn": 30,
-          "startingLine": 52
+          "startingLine": 118
         }
       },
       {
@@ -47,7 +87,39 @@
         "key": "完成",
         "location": {
           "startingColumn": 28,
-          "startingLine": 61
+          "startingLine": 127
+        }
+      },
+      {
+        "comment": "",
+        "key": "正在连接实时画面…",
+        "location": {
+          "startingColumn": 30,
+          "startingLine": 231
+        }
+      },
+      {
+        "comment": "",
+        "key": "实时预览",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 237
+        }
+      },
+      {
+        "comment": "",
+        "key": "原图",
+        "location": {
+          "startingColumn": 42,
+          "startingLine": 243
+        }
+      },
+      {
+        "comment": "",
+        "key": "按住对比",
+        "location": {
+          "startingColumn": 53,
+          "startingLine": 243
         }
       }
     ]

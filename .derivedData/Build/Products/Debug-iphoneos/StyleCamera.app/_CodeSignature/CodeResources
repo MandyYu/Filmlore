@@ -6,19 +6,19 @@
 	<dict>
 		<key>Frameworks/StyleCameraCore.framework/Info.plist</key>
 		<data>
-		5p4arWkFoiY/A/lRhdGfO3AceVk=
+		FIakA+rsaTLwashzpybbGtJONLQ=
 		</data>
 		<key>Frameworks/StyleCameraCore.framework/StyleCameraCore</key>
 		<data>
-		vFgZuqjnEu+u4N3yf9Jyo+Mdjis=
+		KQL+XnkbdTRMOUm7aFFYELp0cUU=
 		</data>
 		<key>Frameworks/StyleCameraCore.framework/_CodeSignature/CodeResources</key>
 		<data>
-		QGBOR4RlAXWEh1B44S3O5B3XII0=
+		8nT3m8T/nUsQLNhGB9a2C0SwHN8=
 		</data>
 		<key>Info.plist</key>
 		<data>
-		FaVE2pu+ztpyqcCHZ1Hjb4RndRk=
+		ar208O8doSaFFb7Yn4Eaky7NSDc=
 		</data>
 		<key>PkgInfo</key>
 		<data>
@@ -26,15 +26,23 @@
 		</data>
 		<key>StyleCamera.debug.dylib</key>
 		<data>
-		JpJ2cZKWqgnpgkRhwHG5YeCWz7Y=
+		h4ympf0wdd25AsQwyw8U+C2tru0=
 		</data>
 		<key>__preview.dylib</key>
 		<data>
-		wHQ977wG3m8Pd50nB3t0DLe2sjk=
+		lwSrsmBJnlbSRYsxEeCfk9ak8mg=
+		</data>
+		<key>city-texture-cover.png</key>
+		<data>
+		kUUezufM3H8RlfcpZiAcNc7LqBI=
 		</data>
 		<key>embedded.mobileprovision</key>
 		<data>
 		xdCFoodvTmQNMBC2+t9yMkOsSm4=
+		</data>
+		<key>food-ins-cover.png</key>
+		<data>
+		WInp9NtxRzgzyUCN7q5J9v7N6+c=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -43,35 +51,42 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			BJlyNzmLTmrfLufU4XFxISyHlJ8aF642QANAEsPFuyg=
+			O32dY1ZlU0hP0nHueLMuQnXoYkUM9xpbowN96lEkGzQ=
 			</data>
 		</dict>
 		<key>Frameworks/StyleCameraCore.framework/StyleCameraCore</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			rT5wmHDDkohz2a3FO10kzKcmNP5ivvSuUcdsIRZ2y4Q=
+			fqQl2y05djzYJfTaYAF7063XunAUQmOaWCmsFwj6dkU=
 			</data>
 		</dict>
 		<key>Frameworks/StyleCameraCore.framework/_CodeSignature/CodeResources</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			yTGL90nrXDlh7GbKvFLxBpPJdTAYb3wPd1Qdt+vNMe4=
+			s73EVesE/AR0nQbEOEhMNm2rsa6lfxnYx2QcdJZmeGA=
 			</data>
 		</dict>
 		<key>StyleCamera.debug.dylib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			D3OhY/xXy6sY0dn6iDxDiygOP+SPyQ/QnwISf+wpt4I=
+			Wek5ofgOqW/VCsx1IXmI6xRLuHwvUNq/QgH6zEh9zwA=
 			</data>
 		</dict>
 		<key>__preview.dylib</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			eGOWGI3ebGmGMAJpSxHWkyX7P0rClRhMbGc2guZJfNM=
+			V/h1Ugnv/cwoiKoTtGL8NmNobtQ3F4u72gHYetH/YJA=
+			</data>
+		</dict>
+		<key>city-texture-cover.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			BS+IenWdwdN+PlN0fQr6hhSUUW1VUMv/CymIYd6KAFQ=
 			</data>
 		</dict>
 		<key>embedded.mobileprovision</key>
@@ -79,6 +94,13 @@
 			<key>hash2</key>
 			<data>
 			QnwWqD6S9YhV39m2ak+xOLLtZ/zuPJrjNHkb5SYz/no=
+			</data>
+		</dict>
+		<key>food-ins-cover.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			t5KhnUqtVBXqMJUh38N9PCPVVSUaznwrrFX8c51pocg=
 			</data>
 		</dict>
 	</dict>

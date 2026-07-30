@@ -33,6 +33,13 @@ public final class StyleSelectionModel {
         presets[selectedIndex] = preset
     }
 
+    public func replacePreset(id: StylePreset.ID, with preset: StylePreset) {
+        guard let index = presets.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        presets[index] = preset
+    }
+
     public func appendAndSelect(_ preset: StylePreset) {
         presets.append(preset)
         selectedIndex = presets.count - 1

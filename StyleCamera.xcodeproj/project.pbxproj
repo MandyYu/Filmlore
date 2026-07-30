@@ -29,6 +29,8 @@
 		100000000000000000000014 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */; };
 		100000000000000000000015 /* StyleCameraApp/Services/MotionLevelService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */; };
 		100000000000000000000016 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */; };
+		100000000000000000000017 /* city-texture-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* city-texture-cover.png */; };
+		100000000000000000000018 /* food-ins-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* food-ins-cover.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,6 +81,8 @@
 		200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/CompositionGuideAnalyzer.swift; sourceTree = "<group>"; };
 		200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/MotionLevelService.swift; sourceTree = "<group>"; };
 		200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/PhotoGuidanceOverlayView.swift; sourceTree = "<group>"; };
+		200000000000000000000018 /* city-texture-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/city-texture-cover.png; sourceTree = "<group>"; };
+		200000000000000000000019 /* food-ins-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/food-ins-cover.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +143,8 @@
 				20000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift */,
 				200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */,
 				200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */,
+				200000000000000000000018 /* city-texture-cover.png */,
+				200000000000000000000019 /* food-ins-cover.png */,
 				200000000000000000000012 /* StyleCameraApp/Info.plist */,
 			);
 			name = App;
@@ -162,6 +168,7 @@
 			buildPhases = (
 				900000000000000000000001 /* Sources */,
 				600000000000000000000001 /* Frameworks */,
+				D00000000000000000000001 /* Resources */,
 				C00000000000000000000001 /* Embed Frameworks */,
 			);
 			buildRules = (
@@ -226,6 +233,18 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D00000000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000017 /* city-texture-cover.png in Resources */,
+				100000000000000000000018 /* food-ins-cover.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		900000000000000000000001 /* Sources */ = {

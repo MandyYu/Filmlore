@@ -368,7 +368,7 @@ final class PhotoFrameRenderer {
         }
 
         let imageSize = imageExtent.size
-        let insets = Self.insets(for: preset.style, imageSize: imageSize)
+        let insets = Self.insets(for: preset, imageSize: imageSize)
         let canvasSize = CGSize(
             width: imageSize.width + insets.left + insets.right,
             height: imageSize.height + insets.top + insets.bottom
@@ -384,11 +384,29 @@ final class PhotoFrameRenderer {
         format.opaque = true
         let renderer = UIGraphicsImageRenderer(size: canvasSize, format: format)
 
-        let framedImage = renderer.image { _ in
+        let cornerRadius = Self.scaledCornerRadius(for: preset, imageSize: imageSize)
+        let framedImage = renderer.image { renderContext in
             Self.backgroundColor(for: preset).setFill()
             UIBezierPath(rect: CGRect(origin: .zero, size: canvasSize)).fill()
 
+            let imagePath = UIBezierPath(roundedRect: imageRect, cornerRadius: cornerRadius)
+            if preset.shadowEnabled {
+                let graphicsContext = renderContext.cgContext
+                graphicsContext.saveGState()
+                graphicsContext.setShadow(
+                    offset: CGSize(width: 0, height: max(5, imageSize.width * 0.006)),
+                    blur: max(12, imageSize.width * 0.018),
+                    color: UIColor.black.withAlphaComponent(0.28).cgColor
+                )
+                UIColor.black.withAlphaComponent(0.12).setFill()
+                imagePath.fill()
+                graphicsContext.restoreGState()
+            }
+
+            renderContext.cgContext.saveGState()
+            imagePath.addClip()
             UIImage(cgImage: cgImage).draw(in: imageRect)
+            renderContext.cgContext.restoreGState()
 
             if preset.style == .film {
                 Self.drawFilmPerforations(canvasSize: canvasSize, imageRect: imageRect, opacity: preset.opacity)
@@ -414,31 +432,51 @@ final class PhotoFrameRenderer {
         )
     }
 
-    private static func insets(for style: PhotoFrameStyle, imageSize: CGSize) -> UIEdgeInsets {
+    private static func insets(for preset: PhotoFramePreset, imageSize: CGSize) -> UIEdgeInsets {
         let shortSide = min(imageSize.width, imageSize.height)
-        switch style {
+        let border = max(10, shortSide * CGFloat(preset.borderWidth) / 375)
+        switch preset.style {
         case .cleanWhite, .cleanBlack:
-            let border = max(42, shortSide * 0.035)
             return UIEdgeInsets(top: border, left: border, bottom: border, right: border)
         case .instant:
-            let side = max(58, shortSide * 0.055)
-            let top = max(58, shortSide * 0.055)
-            let bottom = max(190, shortSide * 0.17)
+            let side = max(border, shortSide * 0.04)
+            let top = max(border, shortSide * 0.04)
+            let bottom = max(border * 3.1, shortSide * 0.12)
             return UIEdgeInsets(top: top, left: side, bottom: bottom, right: side)
         case .film:
-            let horizontal = max(86, shortSide * 0.072)
-            let vertical = max(46, shortSide * 0.038)
+            let horizontal = max(border * 1.8, shortSide * 0.055)
+            let vertical = max(border * 0.9, shortSide * 0.025)
             return UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
+        case .minimal:
+            let minimalBorder = max(8, border * 0.55)
+            return UIEdgeInsets(
+                top: minimalBorder,
+                left: minimalBorder,
+                bottom: minimalBorder,
+                right: minimalBorder
+            )
         }
+    }
+
+    private static func scaledCornerRadius(for preset: PhotoFramePreset, imageSize: CGSize) -> CGFloat {
+        min(imageSize.width, imageSize.height) * CGFloat(preset.cornerRadius) / 375
     }
 
     private static func backgroundColor(for preset: PhotoFramePreset) -> UIColor {
         let alpha = CGFloat(preset.opacity)
-        switch preset.style {
-        case .cleanWhite, .instant:
+        switch preset.backgroundColor {
+        case .white:
             return UIColor(white: 0.98, alpha: alpha)
-        case .cleanBlack, .film:
-            return UIColor(white: 0.02, alpha: alpha)
+        case .lightGray:
+            return UIColor(red: 0.88, green: 0.89, blue: 0.91, alpha: alpha)
+        case .black:
+            return UIColor(white: 0.03, alpha: alpha)
+        case .cream:
+            return UIColor(red: 0.96, green: 0.84, blue: 0.67, alpha: alpha)
+        case .pink:
+            return UIColor(red: 0.96, green: 0.84, blue: 0.90, alpha: alpha)
+        case .mint:
+            return UIColor(red: 0.78, green: 0.94, blue: 0.86, alpha: alpha)
         }
     }
 

@@ -189,15 +189,27 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
     public var enabled: Bool
     public var style: PhotoFrameStyle
     public var opacity: Float
+    public var borderWidth: Float
+    public var cornerRadius: Float
+    public var shadowEnabled: Bool
+    public var backgroundColor: PhotoFrameBackgroundColor
 
     public init(
         enabled: Bool = false,
         style: PhotoFrameStyle = .cleanWhite,
-        opacity: Float = 1
+        opacity: Float = 1,
+        borderWidth: Float = 24,
+        cornerRadius: Float = 12,
+        shadowEnabled: Bool = true,
+        backgroundColor: PhotoFrameBackgroundColor = .white
     ) {
         self.enabled = enabled
         self.style = style
         self.opacity = min(1, max(0, opacity))
+        self.borderWidth = min(40, max(4, borderWidth))
+        self.cornerRadius = min(30, max(0, cornerRadius))
+        self.shadowEnabled = shadowEnabled
+        self.backgroundColor = backgroundColor
     }
 
     public init(from decoder: Decoder) throws {
@@ -206,6 +218,13 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
         style = try container.decodeIfPresent(PhotoFrameStyle.self, forKey: .style) ?? .cleanWhite
         let decodedOpacity = try container.decodeIfPresent(Float.self, forKey: .opacity) ?? 1
         opacity = min(1, max(0, decodedOpacity))
+        let decodedBorderWidth = try container.decodeIfPresent(Float.self, forKey: .borderWidth) ?? 24
+        borderWidth = min(40, max(4, decodedBorderWidth))
+        let decodedCornerRadius = try container.decodeIfPresent(Float.self, forKey: .cornerRadius) ?? 12
+        cornerRadius = min(30, max(0, decodedCornerRadius))
+        shadowEnabled = try container.decodeIfPresent(Bool.self, forKey: .shadowEnabled) ?? true
+        backgroundColor = try container.decodeIfPresent(PhotoFrameBackgroundColor.self, forKey: .backgroundColor)
+            ?? ((style == .cleanBlack || style == .film) ? .black : .white)
     }
 }
 
@@ -214,4 +233,14 @@ public enum PhotoFrameStyle: String, Codable, CaseIterable, Sendable {
     case cleanBlack
     case instant
     case film
+    case minimal
+}
+
+public enum PhotoFrameBackgroundColor: String, Codable, CaseIterable, Sendable {
+    case white
+    case lightGray
+    case black
+    case cream
+    case pink
+    case mint
 }
