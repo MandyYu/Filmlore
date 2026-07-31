@@ -31,6 +31,8 @@
 		100000000000000000000016 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */; };
 		100000000000000000000017 /* city-texture-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* city-texture-cover.png */; };
 		100000000000000000000018 /* food-ins-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* food-ins-cover.png */; };
+		100000000000000000000019 /* StyleCameraApp/StyleCameraTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001A /* StyleCameraApp/StyleCameraTheme.swift */; };
+		10000000000000000000001A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001B /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +85,8 @@
 		200000000000000000000017 /* StyleCameraApp/Views/PhotoGuidanceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/PhotoGuidanceOverlayView.swift; sourceTree = "<group>"; };
 		200000000000000000000018 /* city-texture-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/city-texture-cover.png; sourceTree = "<group>"; };
 		200000000000000000000019 /* food-ins-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/food-ins-cover.png; sourceTree = "<group>"; };
+		20000000000000000000001A /* StyleCameraApp/StyleCameraTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/StyleCameraTheme.swift; sourceTree = "<group>"; };
+		20000000000000000000001B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = StyleCameraApp/Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				200000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift */,
+				20000000000000000000001A /* StyleCameraApp/StyleCameraTheme.swift */,
 				200000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift */,
 				200000000000000000000008 /* StyleCameraApp/Views/CameraView.swift */,
 				200000000000000000000009 /* CameraPreviewView.swift */,
@@ -145,6 +150,7 @@
 				200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */,
 				200000000000000000000018 /* city-texture-cover.png */,
 				200000000000000000000019 /* food-ins-cover.png */,
+				20000000000000000000001B /* Assets.xcassets */,
 				200000000000000000000012 /* StyleCameraApp/Info.plist */,
 			);
 			name = App;
@@ -241,6 +247,7 @@
 			files = (
 				100000000000000000000017 /* city-texture-cover.png in Resources */,
 				100000000000000000000018 /* food-ins-cover.png in Resources */,
+				10000000000000000000001A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -252,6 +259,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000006 /* StyleCameraApp/StyleCameraApp.swift in Sources */,
+				100000000000000000000019 /* StyleCameraApp/StyleCameraTheme.swift in Sources */,
 				100000000000000000000007 /* StyleCameraApp/ViewModels/CameraViewModel.swift in Sources */,
 				100000000000000000000008 /* StyleCameraApp/Views/CameraView.swift in Sources */,
 				100000000000000000000009 /* CameraPreviewView.swift in Sources */,
@@ -417,6 +425,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 3R5SV9VV2C;
+				ENABLE_DEBUG_DYLIB = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = StyleCameraApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

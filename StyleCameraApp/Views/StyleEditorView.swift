@@ -118,8 +118,12 @@ struct StyleEditorView: View {
                         Text("自定义风格属于 StyleCamera Pro 功能。")
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(StyleCameraTheme.screenBackground)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(StyleCameraTheme.screenBackground)
+            .tint(StyleCameraTheme.primary)
+            .preferredColorScheme(.dark)
             .navigationTitle(isCreatingNew ? "新建风格" : "编辑风格")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -189,6 +193,7 @@ struct StyleEditorView: View {
                 step: 1
             )
             .accessibilityLabel(title)
+            .tint(StyleCameraTheme.primary)
 
             Text(parameterValueText(value.wrappedValue, range: range))
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
@@ -236,7 +241,7 @@ private struct StyleEditorLivePreview: View {
             HStack {
                 Label("实时预览", systemImage: "circle.fill")
                     .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, .green)
+                    .foregroundStyle(.white, StyleCameraTheme.cyan)
 
                 Spacer()
 

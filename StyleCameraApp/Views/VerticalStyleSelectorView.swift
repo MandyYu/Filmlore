@@ -47,12 +47,24 @@ struct VerticalStyleSelectorView: View {
                 .font(.system(size: selected ? 15 : 11, weight: selected ? .bold : .medium))
                 .minimumScaleFactor(0.65)
                 .lineLimit(1)
-                .foregroundStyle(selected ? .yellow : .white.opacity(abs(offset) == 2 ? 0.72 : 0.92))
+                .foregroundStyle(
+                    selected ? StyleCameraTheme.primary : .white.opacity(abs(offset) == 2 ? 0.72 : 0.92)
+                )
                 .frame(width: diameter, height: diameter)
-                .background(.black.opacity(selected ? 0.62 : 0.46), in: Circle())
+                .background(
+                    selected
+                        ? StyleCameraTheme.deepPurple.opacity(0.9)
+                        : StyleCameraTheme.panelBackground.opacity(0.76),
+                    in: Circle()
+                )
                 .overlay {
                     Circle()
-                        .stroke(.white.opacity(selected ? 0.16 : 0.08), lineWidth: 1)
+                        .stroke(
+                            selected
+                                ? StyleCameraTheme.primary.opacity(0.88)
+                                : .white.opacity(0.08),
+                            lineWidth: 1
+                        )
                 }
         }
         .buttonStyle(.plain)

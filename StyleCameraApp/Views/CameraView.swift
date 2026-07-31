@@ -16,7 +16,7 @@ struct CameraView: View {
     var body: some View {
         GeometryReader { proxy in
             ZStack {
-                Color.black.ignoresSafeArea()
+                StyleCameraTheme.screenBackground.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     cameraStage
@@ -192,7 +192,7 @@ struct CameraView: View {
             let guidanceTopOffset = max(previewTopOffset + guidanceTopPadding, minimumGuidanceTopOffset)
 
             ZStack {
-                Color.black
+                StyleCameraTheme.screenBackground
 
                 cameraPreviewLayer(surfaceSize: surfaceSize)
                     .frame(width: surfaceSize.width, height: surfaceSize.height)
@@ -313,7 +313,7 @@ struct CameraView: View {
                         .foregroundStyle(.white)
                         .font(.title3)
                         .frame(width: 44, height: 44)
-                        .background(.black.opacity(0.34), in: Circle())
+                        .background(StyleCameraTheme.panelBackground.opacity(0.82), in: Circle())
                 }
 
                 Spacer()
@@ -339,7 +339,7 @@ struct CameraView: View {
                 .font(.title3)
                 .padding(.horizontal, 14)
                 .frame(height: 44)
-                .background(.black.opacity(0.34), in: Capsule())
+                .background(StyleCameraTheme.panelBackground.opacity(0.82), in: Capsule())
             }
 
             Button {
@@ -372,18 +372,21 @@ struct CameraView: View {
 
                     Text("\(lens)x")
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(isSelected ? .black : .white.opacity(0.68))
+                        .foregroundStyle(isSelected ? .white : .white.opacity(0.68))
                         .frame(width: 36, height: 30)
-                        .background(isSelected ? Color.white : Color.clear, in: Circle())
+                        .background(
+                            isSelected ? StyleCameraTheme.primary : Color.clear,
+                            in: Circle()
+                        )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(3)
-        .background(.black.opacity(0.62), in: Capsule())
+        .background(StyleCameraTheme.panelBackground.opacity(0.9), in: Capsule())
         .overlay {
             Capsule()
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+                .stroke(StyleCameraTheme.deepPurple.opacity(0.72), lineWidth: 1)
         }
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.22)
@@ -438,7 +441,9 @@ struct CameraView: View {
         } label: {
             Text(mode.title)
                 .fontWeight(viewModel.captureMode == mode ? .semibold : .regular)
-                .foregroundStyle(viewModel.captureMode == mode ? .yellow : .white)
+                .foregroundStyle(
+                    viewModel.captureMode == mode ? StyleCameraTheme.primary : .white
+                )
                 .frame(width: mode == .video ? 52 : 62, height: 44)
         }
         .buttonStyle(.plain)
@@ -511,11 +516,11 @@ private struct FocusReticleView: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .stroke(.yellow, lineWidth: 1.7)
+                .stroke(StyleCameraTheme.primary, lineWidth: 1.7)
                 .frame(width: 70, height: 70)
 
             RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .stroke(.yellow.opacity(0.72), lineWidth: 1)
+                .stroke(StyleCameraTheme.coral.opacity(0.78), lineWidth: 1)
                 .frame(width: 48, height: 48)
                 .opacity(0.42)
         }
@@ -560,7 +565,7 @@ private extension AVCaptureDevice.FlashMode {
     var tint: Color {
         switch self {
         case .on:
-            return .yellow
+            return StyleCameraTheme.orange
         case .auto, .off:
             return .white
         @unknown default:
@@ -623,7 +628,11 @@ private struct CaptureAspectRatioPickerView: View {
 
                         Text(aspectRatio.title)
                             .font(.system(size: 14, weight: selected == aspectRatio ? .semibold : .medium))
-                            .foregroundStyle(selected == aspectRatio ? .white : .white.opacity(0.55))
+                            .foregroundStyle(
+                                selected == aspectRatio
+                                    ? StyleCameraTheme.primary
+                                    : .white.opacity(0.55)
+                            )
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
@@ -634,14 +643,13 @@ private struct CaptureAspectRatioPickerView: View {
         }
         .padding(.horizontal, 8)
         .frame(maxWidth: 540)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.black.opacity(0.22))
+                .fill(StyleCameraTheme.panelBackground.opacity(0.94))
         )
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
+                .stroke(StyleCameraTheme.deepPurple.opacity(0.9), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.32), radius: 18, x: 0, y: 10)
     }
@@ -650,7 +658,7 @@ private struct CaptureAspectRatioPickerView: View {
     private func ratioIcon(for aspectRatio: CaptureAspectRatio) -> some View {
         let isSelected = selected == aspectRatio
         let lineWidth: CGFloat = isSelected ? 2.2 : 1.8
-        let color = isSelected ? Color.white : Color.white.opacity(0.45)
+        let color = isSelected ? StyleCameraTheme.primary : Color.white.opacity(0.45)
 
         switch aspectRatio {
         case .threeByFour:
@@ -1115,10 +1123,10 @@ private struct StylePreviewComparisonView: View {
         }
         .padding(.top, 10)
         .padding(.bottom, 12)
-        .background(.black.opacity(0.9))
+        .background(StyleCameraTheme.panelBackground.opacity(0.98))
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(.white.opacity(0.08))
+                .fill(StyleCameraTheme.primary.opacity(0.34))
                 .frame(height: 1)
         }
         .shadow(color: .black.opacity(0.35), radius: 18, x: 0, y: 8)
@@ -1133,7 +1141,9 @@ private struct StylePreviewComparisonView: View {
             VStack(spacing: 7) {
                 Text(shortName(for: preset))
                     .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? .white : .white.opacity(0.72))
+                    .foregroundStyle(
+                        isSelected ? StyleCameraTheme.primary : .white.opacity(0.72)
+                    )
                     .lineLimit(1)
                     .frame(width: 82)
 
@@ -1144,7 +1154,11 @@ private struct StylePreviewComparisonView: View {
                             .scaledToFill()
                     } else {
                         LinearGradient(
-                            colors: [.black, .white.opacity(0.13), .black],
+                            colors: [
+                                StyleCameraTheme.deepNavy,
+                                StyleCameraTheme.deepPurple.opacity(0.72),
+                                StyleCameraTheme.panelBackground
+                            ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -1167,11 +1181,11 @@ private struct StylePreviewComparisonView: View {
 
     private var selectedStyleOverlay: some View {
         ZStack {
-            Color.black.opacity(0.54)
+            StyleCameraTheme.deepNavy.opacity(0.66)
 
             Image(systemName: "slider.horizontal.3")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(StyleCameraTheme.palePink)
                 .frame(width: 34, height: 34)
 //                .background(.black.opacity(0.46), in: Circle())
         }
@@ -1238,6 +1252,8 @@ private struct CameraSettingsView: View {
                     settingsDestination(for: route)
                 }
         }
+        .tint(StyleCameraTheme.primary)
+        .preferredColorScheme(.dark)
         .onAppear {
             guard managedStylePresets.isEmpty else { return }
             managedStylePresets = stylePresets
@@ -1269,7 +1285,7 @@ private struct CameraSettingsView: View {
                     title: "风格配置",
                     summary: "预设管理 / 参数调整 / 自定义风格",
                     iconName: "camera.filters",
-                    tint: Color(red: 0.12, green: 0.58, blue: 0.62),
+                    tint: StyleCameraTheme.cyan,
                     badge: "PRO",
                     open: { navigationPath.append(.styles) }
                 )
@@ -1278,7 +1294,7 @@ private struct CameraSettingsView: View {
                     title: "水印",
                     summary: "时间 / 位置 / 风格 / 自定义签名",
                     iconName: "signature",
-                    tint: Color(red: 0.20, green: 0.43, blue: 0.96),
+                    tint: StyleCameraTheme.primary,
                     isEnabled: $watermark.enabled,
                     open: { navigationPath.append(.watermark) }
                 )
@@ -1287,7 +1303,7 @@ private struct CameraSettingsView: View {
                     title: "相框",
                     summary: "白边 / 黑边 / 拍立得 / 胶片",
                     iconName: "photo.on.rectangle.angled",
-                    tint: Color(red: 0.94, green: 0.55, blue: 0.16),
+                    tint: StyleCameraTheme.orange,
                     isEnabled: $photoFrame.enabled,
                     open: { navigationPath.append(.photoFrame) }
                 )
@@ -1296,7 +1312,7 @@ private struct CameraSettingsView: View {
                     title: "AI 指导",
                     summary: "构图 / 光线 / 水平 / 清晰度提醒",
                     iconName: "viewfinder",
-                    tint: Color(red: 0.18, green: 0.66, blue: 0.42),
+                    tint: StyleCameraTheme.coral,
                     isEnabled: $guidanceSettings.isEnabled,
                     open: { navigationPath.append(.guidance) }
                 )
@@ -1304,7 +1320,7 @@ private struct CameraSettingsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 20)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(StyleCameraTheme.screenGradient.ignoresSafeArea())
         .navigationTitle("设置")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -1349,7 +1365,7 @@ private struct CameraSettingsView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 8)
                         .frame(height: 24)
-                        .background(Color.blue, in: Capsule())
+                        .background(StyleCameraTheme.primaryGradient, in: Capsule())
                 }
 
                 LazyVGrid(
@@ -1390,7 +1406,7 @@ private struct CameraSettingsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(StyleCameraTheme.screenBackground)
         .navigationTitle("风格配置")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
@@ -1537,7 +1553,7 @@ private struct CameraSettingsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(StyleCameraTheme.screenBackground)
         .navigationTitle("水印")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -1625,13 +1641,13 @@ private struct CameraSettingsView: View {
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 14)
                                     .frame(height: 32)
-                                    .background(Color.blue, in: Capsule())
+                                    .background(StyleCameraTheme.primaryGradient, in: Capsule())
                             }
                             .foregroundStyle(.secondary)
                         }
                     }
                     .frame(width: 132, height: 150)
-                    .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                    .background(StyleCameraTheme.elevatedBackground)
                     .overlay {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .stroke(Color.secondary.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [5]))
@@ -1728,7 +1744,7 @@ private struct CameraSettingsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(StyleCameraTheme.screenBackground)
         .navigationTitle("相框")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -1750,6 +1766,7 @@ private struct CameraSettingsView: View {
                         }
 
                         Slider(value: guidanceIntensityBinding, in: 0...2, step: 1)
+                            .tint(StyleCameraTheme.primary)
 
                         HStack {
                             Text("低")
@@ -1768,7 +1785,7 @@ private struct CameraSettingsView: View {
                             title: "构图建议",
                             summary: "智能识别主体与构图，推荐更佳画面",
                             systemImage: "viewfinder",
-                            tint: .indigo,
+                            tint: StyleCameraTheme.deepPurple,
                             isOn: $guidanceSettings.compositionEnabled
                         )
                         Divider().padding(.leading, 52)
@@ -1776,7 +1793,7 @@ private struct CameraSettingsView: View {
                             title: "水平角度",
                             summary: "检测地平线，提示画面水平",
                             systemImage: "level",
-                            tint: .gray,
+                            tint: StyleCameraTheme.grayPurple,
                             isOn: $guidanceSettings.angleEnabled
                         )
                         Divider().padding(.leading, 52)
@@ -1784,7 +1801,7 @@ private struct CameraSettingsView: View {
                             title: "光线提醒",
                             summary: "识别光线条件，提供曝光建议",
                             systemImage: "sun.max.fill",
-                            tint: .orange,
+                            tint: StyleCameraTheme.orange,
                             isOn: $guidanceSettings.lightEnabled
                         )
                         Divider().padding(.leading, 52)
@@ -1792,7 +1809,7 @@ private struct CameraSettingsView: View {
                             title: "清晰度提醒",
                             summary: "识别模糊风险，建议保持稳定",
                             systemImage: "camera.metering.center.weighted",
-                            tint: .cyan,
+                            tint: StyleCameraTheme.cyan,
                             isOn: $guidanceSettings.sharpnessEnabled
                         )
                         Divider().padding(.leading, 52)
@@ -1800,7 +1817,7 @@ private struct CameraSettingsView: View {
                             title: "风格提醒",
                             summary: "识别场景风格，推荐滤镜与色调",
                             systemImage: "paintpalette.fill",
-                            tint: .pink,
+                            tint: StyleCameraTheme.primary,
                             isOn: $guidanceSettings.styleEnabled
                         )
                     }
@@ -1817,7 +1834,7 @@ private struct CameraSettingsView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(StyleCameraTheme.screenBackground)
         .navigationTitle("AI 拍照指导")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -1999,7 +2016,7 @@ private struct SettingsFeatureCard: View {
                         Text(isEnabled ? "已启用" : "未启用")
                             .font(.caption)
                             .fontWeight(.medium)
-                            .foregroundStyle(isEnabled ? Color.green : Color.secondary)
+                            .foregroundStyle(isEnabled ? StyleCameraTheme.cyan : StyleCameraTheme.secondaryText)
                     }
 
                     Spacer(minLength: 4)
@@ -2011,6 +2028,7 @@ private struct SettingsFeatureCard: View {
 
             Toggle("", isOn: $isEnabled)
                 .labelsHidden()
+                .tint(StyleCameraTheme.primary)
                 .accessibilityLabel("\(title)开关")
 
             Button(action: open) {
@@ -2024,10 +2042,17 @@ private struct SettingsFeatureCard: View {
             .accessibilityLabel("进入\(title)设置")
         }
         .padding(14)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(
+            LinearGradient(
+                colors: [tint.opacity(0.22), StyleCameraTheme.panelBackground],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.13), lineWidth: 1)
+                .stroke(tint.opacity(0.22), lineWidth: 1)
         }
     }
 }
@@ -2061,7 +2086,7 @@ private struct SettingsFeatureLinkCard: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .frame(height: 19)
-                                .background(Color.blue, in: Capsule())
+                                .background(StyleCameraTheme.primaryGradient, in: Capsule())
                         }
                     }
 
@@ -2082,10 +2107,17 @@ private struct SettingsFeatureLinkCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(
+            LinearGradient(
+                colors: [tint.opacity(0.22), StyleCameraTheme.panelBackground],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.13), lineWidth: 1)
+                .stroke(tint.opacity(0.22), lineWidth: 1)
         }
     }
 }
@@ -2117,7 +2149,7 @@ private struct StyleManagementCard: View {
                             if isCurrent {
                                 Text("当前")
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(Color.blue)
+                                    .foregroundStyle(StyleCameraTheme.primary)
                             }
                         }
 
@@ -2136,18 +2168,18 @@ private struct StyleManagementCard: View {
                 Image(systemName: isEnabled ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 23, weight: .semibold))
                     .symbolRenderingMode(.palette)
-                    .foregroundStyle(isEnabled ? Color.blue : Color.secondary, Color.white)
+                    .foregroundStyle(isEnabled ? StyleCameraTheme.primary : StyleCameraTheme.secondaryText, Color.white)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isEnabled ? "从拍摄滤镜中隐藏\(preset.name)" : "在拍摄滤镜中显示\(preset.name)")
         }
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isCurrent ? Color.blue : Color.secondary.opacity(0.13), lineWidth: isCurrent ? 2 : 1)
+                .stroke(isCurrent ? StyleCameraTheme.primary : StyleCameraTheme.divider.opacity(0.75), lineWidth: isCurrent ? 2 : 1)
         }
     }
 
@@ -2161,8 +2193,8 @@ private struct StyleManagementCard: View {
             ZStack {
                 LinearGradient(
                     colors: [
-                        Color(red: 0.22, green: 0.27, blue: 0.31),
-                        Color(red: 0.58, green: 0.64, blue: 0.66)
+                        StyleCameraTheme.deepPurple,
+                        StyleCameraTheme.elevatedBackground
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -2183,16 +2215,16 @@ private struct AddCustomStyleCard: View {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "plus")
                         .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(Color.blue)
+                        .foregroundStyle(StyleCameraTheme.primary)
                         .frame(width: 58, height: 58)
-                        .background(Color.blue.opacity(0.1), in: Circle())
+                        .background(StyleCameraTheme.primary.opacity(0.14), in: Circle())
 
                     Text("PRO")
                         .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .frame(height: 17)
-                        .background(Color.blue, in: Capsule())
+                        .background(StyleCameraTheme.primaryGradient, in: Capsule())
                         .offset(x: 12, y: -5)
                 }
 
@@ -2208,10 +2240,10 @@ private struct AddCustomStyleCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.blue.opacity(0.42), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
+                .stroke(StyleCameraTheme.primary.opacity(0.52), style: StrokeStyle(lineWidth: 1.5, dash: [6]))
         }
     }
 }
@@ -2227,10 +2259,11 @@ private struct SettingsToggleCard: View {
         }
         .padding(.horizontal, 16)
         .frame(minHeight: 56)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .tint(StyleCameraTheme.primary)
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(StyleCameraTheme.divider.opacity(0.58), lineWidth: 1)
         }
     }
 }
@@ -2250,10 +2283,10 @@ private struct SettingsDetailCard<Content: View>: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(StyleCameraTheme.divider.opacity(0.58), lineWidth: 1)
         }
     }
 }
@@ -2288,7 +2321,7 @@ private struct SettingsDisabledHint: View {
         .foregroundStyle(.secondary)
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -2301,7 +2334,7 @@ private struct WatermarkModeSelector: View {
             modeButton(.manual, title: "手动配置", systemImage: "pencil")
         }
         .padding(4)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private func modeButton(_ mode: WatermarkMode, title: String, systemImage: String) -> some View {
@@ -2312,15 +2345,15 @@ private struct WatermarkModeSelector: View {
         } label: {
             Label(title, systemImage: systemImage)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isSelected ? Color.blue : Color.primary)
+                .foregroundStyle(isSelected ? StyleCameraTheme.palePink : Color.primary)
                 .frame(maxWidth: .infinity, minHeight: 42)
                 .background(
-                    isSelected ? Color.blue.opacity(0.1) : Color.clear,
+                    isSelected ? StyleCameraTheme.primary.opacity(0.16) : Color.clear,
                     in: RoundedRectangle(cornerRadius: 6, style: .continuous)
                 )
                 .overlay {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 1.5)
+                        .stroke(isSelected ? StyleCameraTheme.primary : Color.clear, lineWidth: 1.5)
                 }
                 .contentShape(Rectangle())
         }
@@ -2401,6 +2434,7 @@ private struct SettingsSliderRow: View {
             .accessibilityLabel("减小\(title)")
 
             Slider(value: $value, in: range)
+                .tint(StyleCameraTheme.primary)
 
             Button {
                 value = min(range.upperBound, value + adjustmentStep)
@@ -2439,12 +2473,12 @@ private struct WatermarkPositionPicker: View {
                             .font(.system(size: 15, weight: .semibold))
                             .frame(width: 42, height: 38)
                             .background(
-                                isSelected ? Color.blue.opacity(0.1) : Color(uiColor: .tertiarySystemGroupedBackground),
+                                isSelected ? StyleCameraTheme.primary.opacity(0.16) : StyleCameraTheme.elevatedBackground,
                                 in: RoundedRectangle(cornerRadius: 7, style: .continuous)
                             )
                             .overlay {
                                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                    .stroke(isSelected ? Color.blue : Color.secondary.opacity(0.15), lineWidth: isSelected ? 1.5 : 1)
+                                    .stroke(isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider, lineWidth: isSelected ? 1.5 : 1)
                             }
 
                         Text(position.title)
@@ -2452,7 +2486,7 @@ private struct WatermarkPositionPicker: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
-                    .foregroundStyle(isSelected ? Color.blue : Color.secondary)
+                    .foregroundStyle(isSelected ? StyleCameraTheme.palePink : StyleCameraTheme.secondaryText)
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
@@ -2489,6 +2523,7 @@ private struct GuidanceToggleRow: View {
             }
         }
         .padding(.vertical, 9)
+        .tint(StyleCameraTheme.primary)
     }
 }
 
@@ -2507,12 +2542,12 @@ private struct PhotoFrameStylePicker: View {
                         VStack(spacing: 7) {
                             PhotoFrameStyleThumbnail(style: style)
                                 .frame(width: 64, height: 82)
-                                .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                                .background(StyleCameraTheme.elevatedBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                 .overlay {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .stroke(
-                                            isSelected ? Color.blue : Color.secondary.opacity(0.18),
+                                            isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider,
                                             lineWidth: isSelected ? 2 : 1
                                         )
                                 }
@@ -2539,7 +2574,7 @@ private struct PhotoFrameStyleThumbnail: View {
 
     var body: some View {
         ZStack {
-            Color(uiColor: .tertiarySystemGroupedBackground)
+            StyleCameraTheme.elevatedBackground
 
             frameColor
                 .frame(width: frameWidth, height: frameHeight)
@@ -2622,6 +2657,7 @@ private struct FrameValueSlider: View {
                 .frame(width: 76, alignment: .leading)
 
             Slider(value: $value, in: range)
+                .tint(StyleCameraTheme.primary)
 
             Text("\(Int(value.rounded()))")
                 .font(.system(.subheadline, design: .rounded))
@@ -2656,7 +2692,7 @@ private struct PhotoFrameBackgroundColorPicker: View {
                             .padding(3)
                             .overlay {
                                 Circle()
-                                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                                    .stroke(isSelected ? StyleCameraTheme.primary : Color.clear, lineWidth: 2)
                             }
                     }
                     .buttonStyle(.plain)
@@ -2720,11 +2756,11 @@ private struct SettingsOptionGrid<Option: Hashable>: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.yellow.opacity(0.18) : Color.secondary.opacity(0.1))
+                    .fill(isSelected ? StyleCameraTheme.primary.opacity(0.16) : StyleCameraTheme.elevatedBackground)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isSelected ? Color.yellow.opacity(0.82) : Color.secondary.opacity(0.16), lineWidth: 1)
+                    .stroke(isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider, lineWidth: 1)
             }
             .contentShape(Rectangle())
         }
@@ -3000,21 +3036,21 @@ private struct PhotoGuidancePreviewView: View {
                     GuidancePreviewChip(
                         title: "画面稍微向右",
                         systemImage: "level",
-                        tint: .blue
+                        tint: StyleCameraTheme.cyan
                     )
                 }
                 if settings.lightEnabled {
                     GuidancePreviewChip(
                         title: "光线偏暗",
                         systemImage: "sun.max.fill",
-                        tint: .yellow
+                        tint: StyleCameraTheme.orange
                     )
                 }
                 if settings.compositionEnabled {
                     GuidancePreviewChip(
                         title: "主体可再靠近三分线",
                         systemImage: "viewfinder",
-                        tint: .green
+                        tint: StyleCameraTheme.coral
                     )
                 }
             }
@@ -3057,7 +3093,7 @@ private struct GuidancePreviewChip: View {
     var body: some View {
         Label(title, systemImage: systemImage)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(tint == .yellow ? Color.black.opacity(0.78) : Color.white)
+            .foregroundStyle(.white)
             .padding(.horizontal, 10)
             .frame(minHeight: 32)
             .background(tint.opacity(0.86), in: Capsule())
@@ -3252,7 +3288,7 @@ private struct WatermarkTextColorPicker: View {
 
                             if selection == color {
                                 Circle()
-                                    .stroke(.yellow, lineWidth: 2)
+                                    .stroke(StyleCameraTheme.primary, lineWidth: 2)
                                     .frame(width: 34, height: 34)
                             }
                         }
@@ -3284,11 +3320,11 @@ private struct WatermarkToggleButton: View {
                 }
 
                 Circle()
-                    .fill(isOn ? .yellow : .white.opacity(0.58))
+                    .fill(isOn ? StyleCameraTheme.primary : .white.opacity(0.58))
                     .frame(width: 5, height: 5)
                     .offset(x: 13, y: -12)
             }
-            .foregroundStyle(isOn ? .yellow : .white.opacity(0.78))
+            .foregroundStyle(isOn ? StyleCameraTheme.primary : .white.opacity(0.78))
             .frame(width: 30, height: 30)
         }
         .buttonStyle(.plain)
@@ -3402,16 +3438,16 @@ private struct LensDialView: View {
                 VStack(spacing: 0) {
                     Text(zoomText)
                         .font(.system(size: 24, weight: .semibold))
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(StyleCameraTheme.primary)
                     Text(focalLengthText)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.yellow.opacity(0.88))
+                        .foregroundStyle(StyleCameraTheme.palePink.opacity(0.9))
                 }
                 .position(x: layout.centerX, y: layout.readoutY)
 
                 Image(systemName: "triangle.fill")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(StyleCameraTheme.primary)
                     .rotationEffect(.degrees(180))
                     .position(x: layout.centerX, y: layout.pointerY)
             }

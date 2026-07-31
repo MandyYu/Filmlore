@@ -1,0 +1,3 @@
+framework module StyleCameraCore {
+  header "StyleCameraCore-Swift.h"
+}

@@ -23,26 +23,31 @@ struct CameraControlsView: View {
                 Spacer()
 
                 Button(action: openStylePreview) {
-                    Image(systemName: "square.grid.2x2.fill")
+                    Image(systemName: "camera.filters")
                         .font(.title.weight(.semibold))
-                        .foregroundStyle(isStyleActive ? .yellow : .white)
-                        .frame(width: 56, height: 56)
+                        .foregroundStyle(isStyleActive ? StyleCameraTheme.primary : .white)
+                        .frame(width: 54, height: 54)
                         .background(
-                            isStyleActive ? .yellow.opacity(0.18) : .white.opacity(0.12),
+                            isStyleActive
+                                ? StyleCameraTheme.primary.opacity(0.2)
+                                : StyleCameraTheme.elevatedBackground.opacity(0.88),
                             in: Circle()
                         )
                         .overlay {
                             Circle()
-                                .stroke(isStyleActive ? .yellow.opacity(0.8) : .clear, lineWidth: 1.5)
+                                .stroke(
+                                    isStyleActive ? StyleCameraTheme.primary.opacity(0.9) : .clear,
+                                    lineWidth: 1.5
+                                )
                         }
-                        .overlay(alignment: .topTrailing) {
-                            if isStyleActive {
-                                Circle()
-                                    .fill(.yellow)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: -6, y: 6)
-                            }
-                        }
+//                        .overlay(alignment: .topTrailing) {
+//                            if isStyleActive {
+//                                Circle()
+//                                    .fill(StyleCameraTheme.coral)
+//                                    .frame(width: 8, height: 8)
+//                                    .offset(x: -6, y: 6)
+//                            }
+//                        }
                 }
                 .accessibilityLabel("风格预览")
             }
@@ -57,7 +62,7 @@ struct CameraControlsView: View {
         Button(action: capture) {
             ZStack {
                 Circle()
-                    .fill(captureMode == .photo ? .white : .red)
+                    .fill(captureMode == .photo ? .white : StyleCameraTheme.primary)
                     .frame(width: captureMode == .photo ? 76 : 66, height: captureMode == .photo ? 76 : 66)
 
                 if captureMode == .video {
@@ -69,11 +74,24 @@ struct CameraControlsView: View {
             .frame(width: 86, height: 86)
             .overlay {
                 Circle()
-                    .stroke(Color.white.opacity(0.24), lineWidth: 10)
+//                    .stroke(
+//                           captureMode == .photo
+//                               ? StyleCameraTheme.primary.opacity(0.9)
+//                               : StyleCameraTheme.palePink.opacity(0.5),
+//                           lineWidth: 5
+//                       )
+                    .stroke(shutterRingStyle, lineWidth: 5)
                     .frame(width: 76, height: 76)
             }
         }
         .buttonStyle(.plain)
+    }
+
+    private var shutterRingStyle: AnyShapeStyle {
+        if captureMode == .photo {
+            return AnyShapeStyle(StyleCameraTheme.shutterRingGradient)
+        }
+        return AnyShapeStyle(StyleCameraTheme.palePink.opacity(0.5))
     }
 
     private var recentPhotoButton: some View {
@@ -85,14 +103,20 @@ struct CameraControlsView: View {
                         .scaledToFill()
                 } else {
                     LinearGradient(
-                        colors: [.blue.opacity(0.65), .brown.opacity(0.8)],
+                        colors: [StyleCameraTheme.deepPurple, StyleCameraTheme.coral],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 }
             }
             .frame(width: 54, height: 54)
-            .clipShape(Circle())
+            .clipShape(
+                Circle()
+            )
+            .overlay {
+                Circle()
+                    .stroke(StyleCameraTheme.primary.opacity(0.6), lineWidth: 1.5)
+            }
         }
     }
 

@@ -19,10 +19,10 @@ struct PhotoGuidanceOverlayView: View {
                 .foregroundStyle(foregroundColor(for: hint))
                 .padding(.horizontal, 14)
                 .frame(height: 36)
-                .background(.black.opacity(0.48), in: Capsule())
+                .background(StyleCameraTheme.panelBackground.opacity(0.84), in: Capsule())
                 .overlay {
                     Capsule()
-                        .stroke(.white.opacity(0.12), lineWidth: 0.8)
+                        .stroke(StyleCameraTheme.primary.opacity(0.32), lineWidth: 0.8)
                 }
                 .shadow(color: .black.opacity(0.28), radius: 10, x: 0, y: 4)
                 .transition(.opacity.combined(with: .scale(scale: 0.94)))
@@ -43,9 +43,9 @@ struct PhotoGuidanceOverlayView: View {
 
     private func foregroundColor(for hint: PhotoGuidanceHint) -> Color {
         switch hint.severity {
-        case .high: return .yellow
+        case .high: return StyleCameraTheme.orange
         case .medium: return .white
-        case .low: return .white.opacity(0.88)
+        case .low: return StyleCameraTheme.palePink
         }
     }
 }
