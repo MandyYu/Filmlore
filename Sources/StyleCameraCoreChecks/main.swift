@@ -132,12 +132,64 @@ expect(watermarkDefaults.locationOverrideText == "", "default watermark location
 expect(watermarkDefaults.customPosition == nil, "default watermark custom position")
 expect(watermarkDefaults.imageData == nil, "default watermark image data")
 expect(watermarkDefaults.imageScale == 0.22, "default watermark image scale")
+expect(watermarkDefaults.template == .signature, "default watermark template")
 expect(watermarkDefaults.textColor == .automatic, "default watermark text color")
 expect(watermarkDefaults.visualStyle == .minimal, "default watermark visual style")
 expect(watermarkDefaults.effect == .shadow, "default watermark effect")
 expect(WatermarkAnchor(x: -1, y: 2) == WatermarkAnchor(x: 0, y: 1), "watermark anchor clamp")
 expect(WatermarkPreset(imageScale: 2).imageScale == 0.6, "watermark image scale upper clamp")
 expect(WatermarkPreset(imageScale: -1).imageScale == 0.08, "watermark image scale lower clamp")
+let legacyWatermark = try? JSONDecoder().decode(WatermarkPreset.self, from: Data("{}".utf8))
+expect(legacyWatermark?.template == .signature, "legacy watermark template fallback")
+let travelWatermarkText = WatermarkPreset(
+    text: "My Trip",
+    template: .travelCard,
+    includeDate: true,
+    includeDevice: true,
+    includeStyleName: true,
+    includeLocation: true
+).displayText(
+    styleName: "Fresh",
+    deviceName: "iPhone",
+    locationText: "Hangzhou",
+    dateText: "2026.07.31"
+)
+expect(
+    travelWatermarkText == "▣ My Trip  Fresh\n2026.07.31 | iPhone | Hangzhou",
+    "travel watermark template ordering"
+)
+let centeredTravelText = WatermarkPreset(
+    text: "My Trip",
+    template: .centeredTravel,
+    includeDate: true,
+    includeStyleName: false,
+    includeLocation: true
+).displayText(
+    styleName: "Fresh",
+    deviceName: "iPhone",
+    locationText: "Beijing",
+    dateText: "2026.07.30"
+)
+expect(
+    centeredTravelText == "— My Trip —\nBeijing\n2026-07-30",
+    "centered travel watermark ordering"
+)
+let weekdayQuoteText = WatermarkPreset(
+    text: "Keep Going",
+    template: .weekdayQuote,
+    includeDate: true,
+    includeStyleName: false
+).displayText(
+    styleName: "Fresh",
+    deviceName: "iPhone",
+    locationText: nil,
+    dateText: "2026.07.30",
+    weekdayText: "Thursday"
+)
+expect(
+    weekdayQuoteText == "Thursday\n2026/07/30\n────────\nKeep Going\n────────",
+    "weekday quote watermark ordering"
+)
 expect(
     WatermarkMode.allCases == [.manual, .image],
     "watermark mode options"

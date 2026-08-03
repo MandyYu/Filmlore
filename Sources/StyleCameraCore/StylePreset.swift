@@ -31,6 +31,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var opacity: Float
     public var imageData: Data?
     public var imageScale: Float
+    public var template: WatermarkTemplate
     public var includeDate: Bool
     public var includeDevice: Bool
     public var includeStyleName: Bool
@@ -49,6 +50,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         opacity: Float = 0.65,
         imageData: Data? = nil,
         imageScale: Float = 0.22,
+        template: WatermarkTemplate = .signature,
         includeDate: Bool = true,
         includeDevice: Bool = false,
         includeStyleName: Bool = true,
@@ -66,6 +68,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         self.opacity = min(1, max(0, opacity))
         self.imageData = imageData
         self.imageScale = min(0.6, max(0.08, imageScale))
+        self.template = template
         self.includeDate = includeDate
         self.includeDevice = includeDevice
         self.includeStyleName = includeStyleName
@@ -88,6 +91,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         imageData = try container.decodeIfPresent(Data.self, forKey: .imageData)
         let decodedImageScale = try container.decodeIfPresent(Float.self, forKey: .imageScale) ?? 0.22
         imageScale = min(0.6, max(0.08, decodedImageScale))
+        template = try container.decodeIfPresent(WatermarkTemplate.self, forKey: .template) ?? .signature
         includeDate = try container.decodeIfPresent(Bool.self, forKey: .includeDate) ?? true
         includeDevice = try container.decodeIfPresent(Bool.self, forKey: .includeDevice) ?? false
         includeStyleName = try container.decodeIfPresent(Bool.self, forKey: .includeStyleName) ?? true
@@ -108,6 +112,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(opacity, forKey: .opacity)
         try container.encodeIfPresent(imageData, forKey: .imageData)
         try container.encode(imageScale, forKey: .imageScale)
+        try container.encode(template, forKey: .template)
         try container.encode(includeDate, forKey: .includeDate)
         try container.encode(includeDevice, forKey: .includeDevice)
         try container.encode(includeStyleName, forKey: .includeStyleName)
@@ -127,6 +132,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         case opacity
         case imageData
         case imageScale
+        case template
         case includeDate
         case includeDevice
         case includeStyleName
@@ -136,11 +142,86 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         case visualStyle
         case effect
     }
+
+    public func displayText(
+        styleName: String,
+        deviceName: String,
+        locationText: String?,
+        dateText: String,
+        weekdayText: String = ""
+    ) -> String {
+        let signature = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let style = includeStyleName ? styleName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let device = includeDevice ? deviceName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let date = includeDate ? dateText.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let location: String
+
+        if includeLocation {
+            let override = locationOverrideText.trimmingCharacters(in: .whitespacesAndNewlines)
+            location = override.isEmpty
+                ? (locationText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+                : override
+        } else {
+            location = ""
+        }
+
+        let compact = { (values: [String], separator: String) in
+            values.filter { !$0.isEmpty }.joined(separator: separator)
+        }
+        let lines: [String]
+
+        switch template {
+        case .signature:
+            lines = [compact([signature, style, device, location, date], " · ")]
+        case .travelCard:
+            let title = compact([signature, style], "  ")
+            let firstLine = title.isEmpty ? "" : "▣ \(title)"
+            lines = [firstLine, compact([date, device, location], " | ")]
+        case .dateStamp:
+            lines = [date, compact([signature, style, location, device], " · ")]
+        case .locationCard:
+            lines = [location, compact([signature, style, date, device], " · ")]
+        case .stacked:
+            lines = [
+                signature,
+                compact([style, location], " · "),
+                compact([date, device], " | ")
+            ]
+        case .centeredTravel:
+            let title = compact([signature, style], "  ")
+            let decoratedTitle = title.isEmpty ? "" : "— \(title) —"
+            lines = [
+                decoratedTitle,
+                compact([location, device], " · "),
+                date.replacingOccurrences(of: ".", with: "-")
+            ]
+        case .weekdayQuote:
+            lines = [
+                weekdayText,
+                compact([date.replacingOccurrences(of: ".", with: "/"), device], "  "),
+                "────────",
+                compact([signature, style, location], " · "),
+                "────────"
+            ]
+        }
+
+        return lines.filter { !$0.isEmpty }.joined(separator: "\n")
+    }
 }
 
 public enum WatermarkMode: String, Codable, CaseIterable, Sendable {
     case manual
     case image
+}
+
+public enum WatermarkTemplate: String, Codable, CaseIterable, Sendable {
+    case signature
+    case travelCard
+    case dateStamp
+    case locationCard
+    case stacked
+    case centeredTravel
+    case weekdayQuote
 }
 
 public struct WatermarkAnchor: Codable, Equatable, Sendable {

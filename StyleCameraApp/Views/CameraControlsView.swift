@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CameraControlsView: View {
-    static let height: CGFloat = 126
+    static let height: CGFloat = 106
 
     let thumbnail: UIImage?
     let openLibrary: () -> Void

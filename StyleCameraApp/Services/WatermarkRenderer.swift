@@ -53,8 +53,11 @@ final class WatermarkRenderer {
             context.fill(CGRect(origin: .zero, size: size))
 
             let fontSize = max(18, min(size.width, size.height) * 0.026)
-            let attributes = Self.textAttributes(for: preset, fontSize: fontSize)
-            let attributed = NSAttributedString(string: fullText, attributes: attributes)
+            let attributed = Self.attributedText(
+                fullText,
+                preset: preset,
+                fontSize: fontSize
+            )
             let textSize = attributed.boundingRect(
                 with: CGSize(width: size.width * 0.72, height: .greatestFiniteMagnitude),
                 options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -80,7 +83,9 @@ final class WatermarkRenderer {
                 backgroundColor.setFill()
                 UIBezierPath(
                     roundedRect: backgroundRect,
-                    cornerRadius: min(backgroundRect.height / 2, 18)
+                    cornerRadius: preset.template == .signature
+                        ? min(backgroundRect.height / 2, 18)
+                        : min(fontSize * 0.72, 16)
                 ).fill()
             }
             attributed.draw(in: textRect)
@@ -150,42 +155,25 @@ final class WatermarkRenderer {
         return formatter
     }()
 
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+
     private static func displayText(
         for preset: WatermarkPreset,
         styleName: String,
         locationText: String?
     ) -> String {
-        var parts = [String]()
-        let trimmedText = preset.text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if !trimmedText.isEmpty {
-            parts.append(trimmedText)
-        }
-        if preset.includeStyleName {
-            parts.append(styleName)
-        }
-        if preset.includeDevice {
-            parts.append(UIDevice.current.model)
-        }
-        if preset.includeLocation {
-            let locationOverrideText = preset.locationOverrideText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let resolvedLocationText: String?
-            if !locationOverrideText.isEmpty {
-                resolvedLocationText = locationOverrideText
-            } else {
-                resolvedLocationText = locationText?.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-
-            if let resolvedLocationText,
-               !resolvedLocationText.isEmpty {
-                parts.append(resolvedLocationText)
-            }
-        }
-        if preset.includeDate {
-            parts.append(dateFormatter.string(from: Date()))
-        }
-
-        return parts.joined(separator: " · ")
+        preset.displayText(
+            styleName: styleName,
+            deviceName: UIDevice.current.model,
+            locationText: locationText,
+            dateText: dateFormatter.string(from: Date()),
+            weekdayText: weekdayFormatter.string(from: Date())
+        )
     }
 
     private static func textAttributes(
@@ -194,6 +182,7 @@ final class WatermarkRenderer {
     ) -> [NSAttributedString.Key: Any] {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineBreakMode = .byWordWrapping
+        paragraphStyle.lineSpacing = preset.template == .signature ? 0 : fontSize * 0.22
 
         let font: UIFont
         let color: UIColor
@@ -222,6 +211,65 @@ final class WatermarkRenderer {
             .foregroundColor: color,
             .paragraphStyle: paragraphStyle
         ]
+    }
+
+    private static func attributedText(
+        _ text: String,
+        preset: WatermarkPreset,
+        fontSize: CGFloat
+    ) -> NSAttributedString {
+        let baseAttributes = textAttributes(for: preset, fontSize: fontSize)
+        guard preset.template == .centeredTravel || preset.template == .weekdayQuote else {
+            return NSAttributedString(string: text, attributes: baseAttributes)
+        }
+
+        let lines = text.components(separatedBy: "\n")
+        let attributed = NSMutableAttributedString(string: "")
+
+        for (index, line) in lines.enumerated() {
+            var attributes = baseAttributes
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineBreakMode = .byWordWrapping
+            paragraph.alignment = preset.template == .centeredTravel ? .center : .left
+            paragraph.paragraphSpacing = fontSize * 0.16
+            attributes[.paragraphStyle] = paragraph
+            attributes[.font] = templateFont(
+                for: preset.template,
+                lineIndex: index,
+                fontSize: fontSize
+            )
+
+            let suffix = index == lines.indices.last ? "" : "\n"
+            attributed.append(NSAttributedString(string: line + suffix, attributes: attributes))
+        }
+
+        return attributed
+    }
+
+    private static func templateFont(
+        for template: WatermarkTemplate,
+        lineIndex: Int,
+        fontSize: CGFloat
+    ) -> UIFont {
+        switch template {
+        case .centeredTravel:
+            return lineIndex == 0
+                ? .systemFont(ofSize: fontSize * 1.16, weight: .semibold)
+                : .systemFont(ofSize: fontSize * 0.86, weight: .regular)
+        case .weekdayQuote:
+            switch lineIndex {
+            case 0:
+                return .systemFont(ofSize: fontSize * 1.42, weight: .medium)
+            case 1:
+                return .systemFont(ofSize: fontSize * 0.9, weight: .bold)
+            case 2, 4:
+                return .monospacedSystemFont(ofSize: fontSize * 0.68, weight: .regular)
+            default:
+                return .systemFont(ofSize: fontSize, weight: .regular)
+            }
+        default:
+            return .systemFont(ofSize: fontSize)
+        }
     }
 
     private static func backgroundColor(for preset: WatermarkPreset) -> UIColor? {
@@ -369,16 +417,8 @@ final class PhotoFrameRenderer {
 
         let imageSize = imageExtent.size
         let insets = Self.insets(for: preset, imageSize: imageSize)
-        let canvasSize = CGSize(
-            width: imageSize.width + insets.left + insets.right,
-            height: imageSize.height + insets.top + insets.bottom
-        )
-        let imageRect = CGRect(
-            x: insets.left,
-            y: insets.top,
-            width: imageSize.width,
-            height: imageSize.height
-        )
+        let canvasSize = imageSize
+        let canvasRect = CGRect(origin: .zero, size: canvasSize)
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         format.opaque = true
@@ -386,32 +426,39 @@ final class PhotoFrameRenderer {
 
         let cornerRadius = Self.scaledCornerRadius(for: preset, imageSize: imageSize)
         let framedImage = renderer.image { renderContext in
-            Self.backgroundColor(for: preset).setFill()
-            UIBezierPath(rect: CGRect(origin: .zero, size: canvasSize)).fill()
+            UIImage(cgImage: cgImage).draw(in: canvasRect)
 
-            let imagePath = UIBezierPath(roundedRect: imageRect, cornerRadius: cornerRadius)
-            if preset.shadowEnabled {
-                let graphicsContext = renderContext.cgContext
-                graphicsContext.saveGState()
-                graphicsContext.setShadow(
-                    offset: CGSize(width: 0, height: max(5, imageSize.width * 0.006)),
-                    blur: max(12, imageSize.width * 0.018),
-                    color: UIColor.black.withAlphaComponent(0.28).cgColor
+            switch preset.style {
+            case .cleanWhite, .cleanBlack:
+                Self.drawBorder(
+                    in: canvasRect,
+                    lineWidth: insets.left,
+                    cornerRadius: cornerRadius,
+                    preset: preset
                 )
-                UIColor.black.withAlphaComponent(0.12).setFill()
-                imagePath.fill()
-                graphicsContext.restoreGState()
-            }
-
-            renderContext.cgContext.saveGState()
-            imagePath.addClip()
-            UIImage(cgImage: cgImage).draw(in: imageRect)
-            renderContext.cgContext.restoreGState()
-
-            if preset.style == .film {
-                Self.drawFilmPerforations(canvasSize: canvasSize, imageRect: imageRect, opacity: preset.opacity)
-            } else if preset.style == .instant {
-                Self.drawInstantCaption(canvasSize: canvasSize, imageRect: imageRect, opacity: preset.opacity)
+            case .instant:
+                Self.drawInstantFrame(
+                    in: canvasRect,
+                    insets: insets,
+                    cornerRadius: cornerRadius,
+                    preset: preset,
+                    context: renderContext.cgContext
+                )
+            case .film:
+                Self.drawFilmFrame(
+                    in: canvasRect,
+                    insets: insets,
+                    cornerRadius: cornerRadius,
+                    preset: preset,
+                    context: renderContext.cgContext
+                )
+            case .minimal:
+                Self.drawBorder(
+                    in: canvasRect,
+                    lineWidth: insets.left,
+                    cornerRadius: cornerRadius,
+                    preset: preset
+                )
             }
         }
 
@@ -480,36 +527,106 @@ final class PhotoFrameRenderer {
         }
     }
 
-    private static func drawInstantCaption(
-        canvasSize: CGSize,
-        imageRect: CGRect,
-        opacity: Float
+    private static func drawBorder(
+        in rect: CGRect,
+        lineWidth: CGFloat,
+        cornerRadius: CGFloat,
+        preset: PhotoFramePreset
     ) {
-        let lineWidth = max(2, canvasSize.width * 0.002)
-        let lineRect = CGRect(
-            x: imageRect.minX,
-            y: imageRect.maxY + max(24, canvasSize.height * 0.018),
-            width: imageRect.width * 0.46,
-            height: lineWidth
+        let safeLineWidth = max(1, lineWidth)
+        let pathRect = rect.insetBy(dx: safeLineWidth / 2, dy: safeLineWidth / 2)
+        let path = UIBezierPath(
+            roundedRect: pathRect,
+            cornerRadius: max(0, cornerRadius - safeLineWidth / 2)
         )
-        UIColor.black.withAlphaComponent(CGFloat(opacity) * 0.14).setFill()
-        UIBezierPath(roundedRect: lineRect, cornerRadius: lineWidth / 2).fill()
+
+        if preset.shadowEnabled {
+            UIColor.black.withAlphaComponent(0.28).setStroke()
+            path.lineWidth = safeLineWidth + max(3, safeLineWidth * 0.18)
+            path.stroke()
+        }
+
+        backgroundColor(for: preset).setStroke()
+        path.lineWidth = safeLineWidth
+        path.stroke()
+    }
+
+    private static func drawInstantFrame(
+        in rect: CGRect,
+        insets: UIEdgeInsets,
+        cornerRadius: CGFloat,
+        preset: PhotoFramePreset,
+        context: CGContext
+    ) {
+        drawBorder(
+            in: rect,
+            lineWidth: insets.left,
+            cornerRadius: cornerRadius,
+            preset: preset
+        )
+
+        context.saveGState()
+        UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
+        let captionRect = CGRect(
+            x: rect.minX,
+            y: rect.maxY - insets.bottom,
+            width: rect.width,
+            height: insets.bottom
+        )
+        backgroundColor(for: preset).setFill()
+        UIBezierPath(rect: captionRect).fill()
+
+        let lineHeight = max(2, rect.width * 0.002)
+        let lineRect = CGRect(
+            x: rect.minX + max(insets.left, rect.width * 0.06),
+            y: captionRect.minY + insets.bottom * 0.36,
+            width: rect.width * 0.34,
+            height: lineHeight
+        )
+        UIColor.black.withAlphaComponent(CGFloat(preset.opacity) * 0.14).setFill()
+        UIBezierPath(roundedRect: lineRect, cornerRadius: lineHeight / 2).fill()
+        context.restoreGState()
+    }
+
+    private static func drawFilmFrame(
+        in rect: CGRect,
+        insets: UIEdgeInsets,
+        cornerRadius: CGFloat,
+        preset: PhotoFramePreset,
+        context: CGContext
+    ) {
+        context.saveGState()
+        UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
+        backgroundColor(for: preset).setFill()
+        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.minY, width: insets.left, height: rect.height)).fill()
+        UIBezierPath(rect: CGRect(x: rect.maxX - insets.right, y: rect.minY, width: insets.right, height: rect.height)).fill()
+        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: insets.top)).fill()
+        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.maxY - insets.bottom, width: rect.width, height: insets.bottom)).fill()
+        context.restoreGState()
+
+        drawFilmPerforations(
+            in: rect,
+            railWidth: min(insets.left, insets.right),
+            verticalInset: max(insets.top, insets.bottom),
+            opacity: preset.opacity
+        )
     }
 
     private static func drawFilmPerforations(
-        canvasSize: CGSize,
-        imageRect: CGRect,
+        in rect: CGRect,
+        railWidth: CGFloat,
+        verticalInset: CGFloat,
         opacity: Float
     ) {
-        let holeWidth = max(18, canvasSize.width * 0.015)
-        let holeHeight = max(30, canvasSize.height * 0.028)
+        let holeWidth = max(8, railWidth * 0.34)
+        let holeHeight = max(14, holeWidth * 1.65)
         let step = holeHeight * 1.72
-        let leftX = imageRect.minX * 0.34
-        let rightX = canvasSize.width - leftX - holeWidth
+        let leftX = rect.minX + (railWidth - holeWidth) / 2
+        let rightX = rect.maxX - railWidth + (railWidth - holeWidth) / 2
         UIColor.white.withAlphaComponent(CGFloat(opacity) * 0.28).setFill()
 
-        var y = imageRect.minY + holeHeight * 0.45
-        while y + holeHeight < imageRect.maxY {
+        var y = rect.minY + verticalInset + holeHeight * 0.45
+        while y + holeHeight < rect.maxY - verticalInset {
             let leftRect = CGRect(x: leftX, y: y, width: holeWidth, height: holeHeight)
             let rightRect = CGRect(x: rightX, y: y, width: holeWidth, height: holeHeight)
             UIBezierPath(roundedRect: leftRect, cornerRadius: holeWidth * 0.22).fill()

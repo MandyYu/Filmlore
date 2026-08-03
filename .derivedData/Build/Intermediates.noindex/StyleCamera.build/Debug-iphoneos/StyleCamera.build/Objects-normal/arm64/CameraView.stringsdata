@@ -7,7 +7,7 @@
         "key": "%lldx",
         "location": {
           "startingColumn": 26,
-          "startingLine": 373
+          "startingLine": 420
         }
       },
       {
@@ -15,23 +15,7 @@
         "key": "图片比例",
         "location": {
           "startingColumn": 29,
-          "startingLine": 611
-        }
-      },
-      {
-        "comment": "",
-        "key": "设置",
-        "location": {
-          "startingColumn": 26,
-          "startingLine": 1324
-        }
-      },
-      {
-        "comment": "",
-        "key": "完成",
-        "location": {
-          "startingColumn": 24,
-          "startingLine": 1328
+          "startingLine": 661
         }
       },
       {
@@ -39,7 +23,7 @@
         "key": "风格配置",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1410
+          "startingLine": 1560
         }
       },
       {
@@ -47,7 +31,7 @@
         "key": "水印",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1557
+          "startingLine": 1709
         }
       },
       {
@@ -55,7 +39,7 @@
         "key": "相框",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1748
+          "startingLine": 1900
         }
       },
       {
@@ -63,7 +47,7 @@
         "key": "AI 拍照指导",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1838
+          "startingLine": 1990
         }
       },
       {
@@ -71,7 +55,7 @@
         "key": "至少需要保留一个可用风格。自定义风格会自动勾选。",
         "location": {
           "startingColumn": 23,
-          "startingLine": 1401
+          "startingLine": 1551
         }
       },
       {
@@ -79,7 +63,7 @@
         "key": "PRO",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1363
+          "startingLine": 1513
         }
       },
       {
@@ -87,7 +71,7 @@
         "key": "拍摄风格",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1354
+          "startingLine": 1504
         }
       },
       {
@@ -95,7 +79,7 @@
         "key": "勾选的风格会显示在拍摄页滤镜列表中",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1356
+          "startingLine": 1506
         }
       },
       {
@@ -103,7 +87,7 @@
         "key": "自定义签名",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1565
+          "startingLine": 1717
         }
       },
       {
@@ -111,7 +95,7 @@
         "key": "例如：我的旅拍",
         "location": {
           "startingColumn": 27,
-          "startingLine": 1568
+          "startingLine": 1720
         }
       },
       {
@@ -119,7 +103,7 @@
         "key": "留空使用当前定位：%@",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1583
+          "startingLine": 1735
         }
       },
       {
@@ -127,7 +111,7 @@
         "key": "位置文字",
         "location": {
           "startingColumn": 31,
-          "startingLine": 1581
+          "startingLine": 1733
         }
       },
       {
@@ -135,7 +119,7 @@
         "key": "阴影效果",
         "location": {
           "startingColumn": 22,
-          "startingLine": 1605
+          "startingLine": 1757
         }
       },
       {
@@ -143,7 +127,7 @@
         "key": "阴影效果",
         "location": {
           "startingColumn": 24,
-          "startingLine": 1607
+          "startingLine": 1759
         }
       },
       {
@@ -151,7 +135,7 @@
         "key": "尚未上传水印",
         "location": {
           "startingColumn": 38,
-          "startingLine": 1637
+          "startingLine": 1789
         }
       },
       {
@@ -159,7 +143,7 @@
         "key": "从相册选择",
         "location": {
           "startingColumn": 38,
-          "startingLine": 1639
+          "startingLine": 1791
         }
       },
       {
@@ -167,7 +151,7 @@
         "key": "图片水印",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1663
+          "startingLine": 1815
         }
       },
       {
@@ -175,7 +159,7 @@
         "key": "推荐使用透明背景 PNG，适合签名、Logo 或图形标记。",
         "location": {
           "startingColumn": 26,
-          "startingLine": 1665
+          "startingLine": 1817
         }
       },
       {
@@ -183,7 +167,7 @@
         "key": "%lld x %lld",
         "location": {
           "startingColumn": 30,
-          "startingLine": 1671
+          "startingLine": 1823
         }
       },
       {
@@ -191,7 +175,7 @@
         "key": "移除图片",
         "location": {
           "startingColumn": 35,
-          "startingLine": 1679
+          "startingLine": 1831
         }
       },
       {
@@ -199,7 +183,7 @@
         "key": "提示强度",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1760
+          "startingLine": 1912
         }
       },
       {
@@ -207,7 +191,7 @@
         "key": "低",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1772
+          "startingLine": 1924
         }
       },
       {
@@ -215,7 +199,7 @@
         "key": "中",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1774
+          "startingLine": 1926
         }
       },
       {
@@ -223,7 +207,7 @@
         "key": "高",
         "location": {
           "startingColumn": 34,
-          "startingLine": 1776
+          "startingLine": 1928
         }
       },
       {
@@ -231,7 +215,7 @@
         "key": "",
         "location": {
           "startingColumn": 20,
-          "startingLine": 2029
+          "startingLine": 2193
         }
       },
       {
@@ -239,7 +223,7 @@
         "key": "%@开关",
         "location": {
           "startingColumn": 37,
-          "startingLine": 2032
+          "startingLine": 2196
         }
       },
       {
@@ -247,7 +231,7 @@
         "key": "进入%@设置",
         "location": {
           "startingColumn": 33,
-          "startingLine": 2042
+          "startingLine": 2206
         }
       },
       {
@@ -255,7 +239,7 @@
         "key": "已启用",
         "location": {
           "startingColumn": 42,
-          "startingLine": 2016
+          "startingLine": 2180
         }
       },
       {
@@ -263,7 +247,7 @@
         "key": "未启用",
         "location": {
           "startingColumn": 56,
-          "startingLine": 2016
+          "startingLine": 2180
         }
       },
       {
@@ -271,7 +255,7 @@
         "key": "从拍摄滤镜中隐藏%@",
         "location": {
           "startingColumn": 45,
-          "startingLine": 2176
+          "startingLine": 2340
         }
       },
       {
@@ -279,7 +263,7 @@
         "key": "在拍摄滤镜中显示%@",
         "location": {
           "startingColumn": 88,
-          "startingLine": 2176
+          "startingLine": 2340
         }
       },
       {
@@ -287,7 +271,7 @@
         "key": "内置风格",
         "location": {
           "startingColumn": 49,
-          "startingLine": 2156
+          "startingLine": 2320
         }
       },
       {
@@ -295,7 +279,7 @@
         "key": "我的风格 · PRO",
         "location": {
           "startingColumn": 66,
-          "startingLine": 2156
+          "startingLine": 2320
         }
       },
       {
@@ -303,7 +287,7 @@
         "key": "当前",
         "location": {
           "startingColumn": 38,
-          "startingLine": 2150
+          "startingLine": 2314
         }
       },
       {
@@ -311,7 +295,7 @@
         "key": "自定义风格",
         "location": {
           "startingColumn": 22,
-          "startingLine": 2231
+          "startingLine": 2395
         }
       },
       {
@@ -319,7 +303,7 @@
         "key": "新建并保存参数",
         "location": {
           "startingColumn": 22,
-          "startingLine": 2235
+          "startingLine": 2399
         }
       },
       {
@@ -327,7 +311,7 @@
         "key": "PRO",
         "location": {
           "startingColumn": 26,
-          "startingLine": 2222
+          "startingLine": 2386
         }
       },
       {
@@ -335,7 +319,7 @@
         "key": "减小%@",
         "location": {
           "startingColumn": 33,
-          "startingLine": 2434
+          "startingLine": 2699
         }
       },
       {
@@ -343,7 +327,7 @@
         "key": "增大%@",
         "location": {
           "startingColumn": 33,
-          "startingLine": 2446
+          "startingLine": 2711
         }
       },
       {
@@ -351,7 +335,7 @@
         "key": "选择%@",
         "location": {
           "startingColumn": 41,
-          "startingLine": 2563
+          "startingLine": 2828
         }
       },
       {
@@ -359,7 +343,7 @@
         "key": "%lld",
         "location": {
           "startingColumn": 18,
-          "startingLine": 2662
+          "startingLine": 2927
         }
       },
       {
@@ -367,7 +351,7 @@
         "key": "背景颜色",
         "location": {
           "startingColumn": 18,
-          "startingLine": 2676
+          "startingLine": 2941
         }
       },
       {
@@ -375,7 +359,7 @@
         "key": "未选择 PNG",
         "location": {
           "startingColumn": 22,
-          "startingLine": 2834
+          "startingLine": 3104
         }
       },
       {
@@ -383,7 +367,7 @@
         "key": "文字颜色",
         "location": {
           "startingColumn": 18,
-          "startingLine": 3263
+          "startingLine": 3617
         }
       },
       {
@@ -391,7 +375,7 @@
         "key": "A",
         "location": {
           "startingColumn": 38,
-          "startingLine": 3276
+          "startingLine": 3630
         }
       },
       {
@@ -399,7 +383,7 @@
         "key": "关闭水印",
         "location": {
           "startingColumn": 36,
-          "startingLine": 3331
+          "startingLine": 3685
         }
       },
       {
@@ -407,7 +391,7 @@
         "key": "开启水印",
         "location": {
           "startingColumn": 53,
-          "startingLine": 3331
+          "startingLine": 3685
         }
       }
     ]

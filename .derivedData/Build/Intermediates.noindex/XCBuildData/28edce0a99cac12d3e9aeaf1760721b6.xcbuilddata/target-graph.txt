@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'StyleCamera' in project 'StyleCamera'
-➜ Explicit dependency on target 'StyleCameraCore' in project 'StyleCamera'
-Target 'StyleCameraCore' in project 'StyleCamera' (no dependencies)

@@ -738,6 +738,8 @@ final class CameraViewModel: ObservableObject {
             var output = self.renderer.applyStyle(to: croppedInput, params: style.params)
             output = self.renderer.normalized(output)
 
+            output = self.photoFrameRenderer.renderFrame(around: output, preset: photoFrame)
+
             if watermark.enabled {
                 output = self.watermarkRenderer.renderWatermark(
                     on: output,
@@ -746,8 +748,6 @@ final class CameraViewModel: ObservableObject {
                     locationText: locationText
                 )
             }
-
-            output = self.photoFrameRenderer.renderFrame(around: output, preset: photoFrame)
 
             guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
                   let jpeg = self.renderer.context.jpegRepresentation(

@@ -12,70 +12,97 @@ struct CameraView: View {
     @State private var isAspectRatioPickerVisible = false
     @State private var focusIndicator: FocusIndicator?
     @State private var pinchStartZoom: CGFloat?
+    @State private var settingsNavigationPath = [CameraSettingsRoute]()
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                StyleCameraTheme.screenBackground.ignoresSafeArea()
+        NavigationStack(path: $settingsNavigationPath) {
+            GeometryReader { proxy in
+                ZStack {
+                    StyleCameraTheme.screenBackground.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    cameraStage
-                        .contentShape(Rectangle())
+                    VStack(spacing: 0) {
+                        cameraStage
+                            .contentShape(Rectangle())
 
-                    CameraControlsView(
-                        thumbnail: viewModel.lastSavedThumbnail,
-                        openLibrary: viewModel.openPhotoLibrary,
-                        captureMode: viewModel.captureMode,
-                        capture: viewModel.capturePrimaryAction,
-                        openStylePreview: openStylePreview,
-                        isStyleActive: isStyleActive
-                    )
-                }
+                        CameraControlsView(
+                            thumbnail: viewModel.lastSavedThumbnail,
+                            openLibrary: viewModel.openPhotoLibrary,
+                            captureMode: viewModel.captureMode,
+                            capture: viewModel.capturePrimaryAction,
+                            openStylePreview: openStylePreview,
+                            isStyleActive: isStyleActive
+                        )
+                    }
 //                .padding(.top, proxy.safeAreaInsets.top)
 //                .padding(.bottom, proxy.safeAreaInsets.bottom)
 
-                if isStylePreviewVisible {
-                    VStack {
-                        Spacer()
+                    if isStylePreviewVisible {
+                        VStack {
+                            Spacer()
 
-                        StylePreviewComparisonView(
-                            presets: viewModel.visibleStylePresets,
-                            selectedID: viewModel.selection.selectedPreset.id,
-                            previewStore: viewModel.stylePreviewStore,
-                            select: { id in
-                                viewModel.selectStyle(id: id)
-                            }
-                        )
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, CameraControlsView.height )
-                        .simultaneousGesture(stylePreviewDismissGesture)
-                    }
-                    .zIndex(4)
-                }
-
-                if isAspectRatioPickerVisible {
-                    VStack(spacing: 0) {
-                        Color.clear
-                            .frame(height: proxy.safeAreaInsets.top)
-                            .allowsHitTesting(false)
-
-                        CaptureAspectRatioPickerView(
-                            selected: viewModel.captureAspectRatio,
-                            select: { ratio in
-                                withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
-                                    viewModel.setCaptureAspectRatio(ratio)
-                                    isAspectRatioPickerVisible = false
+                            StylePreviewComparisonView(
+                                presets: viewModel.visibleStylePresets,
+                                selectedID: viewModel.selection.selectedPreset.id,
+                                previewStore: viewModel.stylePreviewStore,
+                                select: { id in
+                                    viewModel.selectStyle(id: id)
                                 }
-                            }
-                        )
-                        .padding(.horizontal, 52)
-                        .padding(.top, 4)
-
-                        Spacer()
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.bottom, CameraControlsView.height )
+                            .simultaneousGesture(stylePreviewDismissGesture)
+                        }
+                        .zIndex(4)
                     }
-                    .zIndex(5)
-                }
 
+                    if isAspectRatioPickerVisible {
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: proxy.safeAreaInsets.top)
+                                .allowsHitTesting(false)
+
+                            CaptureAspectRatioPickerView(
+                                selected: viewModel.captureAspectRatio,
+                                select: { ratio in
+                                    withAnimation(.spring(response: 0.24, dampingFraction: 0.86)) {
+                                        viewModel.setCaptureAspectRatio(ratio)
+                                        isAspectRatioPickerVisible = false
+                                    }
+                                }
+                            )
+                            .padding(.horizontal, 52)
+                            .padding(.top, 4)
+
+                            Spacer()
+                        }
+                        .zIndex(5)
+                    }
+
+                    if viewModel.isSettingsPresented {
+                        Color.black.opacity(0.52)
+                            .ignoresSafeArea()
+                            .onTapGesture(perform: closeSettingsOverlay)
+                            .transition(.opacity)
+                            .zIndex(9)
+
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: proxy.safeAreaInsets.top)
+                                .allowsHitTesting(false)
+
+                            settingsView(route: nil)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 4)
+
+                            Spacer(minLength: max(proxy.safeAreaInsets.bottom, 12))
+                        }
+                        .transition(.scale(scale: 0.96, anchor: .top).combined(with: .opacity))
+                        .zIndex(10)
+                    }
+                }
+            }
+            .navigationDestination(for: CameraSettingsRoute.self) { route in
+                settingsView(route: route)
             }
         }
         .sheet(isPresented: $viewModel.isStyleEditorPresented) {
@@ -96,29 +123,51 @@ struct CameraView: View {
                 viewModel.useLibraryImage(image)
             }
         }
-        .sheet(isPresented: $viewModel.isSettingsPresented) {
-            CameraSettingsView(
-                watermark: $viewModel.watermark,
-                photoFrame: $viewModel.photoFrame,
-                guidanceSettings: $viewModel.guidanceSettings,
-                previewStore: viewModel.previewStore,
-                rawPreviewStore: viewModel.rawPreviewStore,
-                stylePreviewStore: viewModel.stylePreviewStore,
-                stylePresets: viewModel.selection.presets,
-                disabledStyleIDs: viewModel.disabledStyleIDs,
-                selectedStyleID: viewModel.selection.selectedPreset.id,
-                createStyle: viewModel.createCustomStyle,
-                updateStyle: viewModel.updateCustomStyle,
-                setStyleEnabled: viewModel.setStyleEnabled,
-                setStyleEditorPreviewActive: viewModel.setStyleEditorPreviewActive,
-                currentStyleName: viewModel.selection.selectedPreset.name,
-                locationText: viewModel.locationText,
-                requestLocation: viewModel.requestWatermarkLocation
-            )
-            .presentationDetents([.large])
-        }
         .onAppear(perform: viewModel.start)
         .onDisappear(perform: viewModel.stop)
+    }
+
+    private func settingsView(route: CameraSettingsRoute?) -> some View {
+        CameraSettingsView(
+            route: route,
+            watermark: $viewModel.watermark,
+            photoFrame: $viewModel.photoFrame,
+            guidanceSettings: $viewModel.guidanceSettings,
+            previewStore: viewModel.previewStore,
+            rawPreviewStore: viewModel.rawPreviewStore,
+            stylePreviewStore: viewModel.stylePreviewStore,
+            stylePresets: viewModel.selection.presets,
+            disabledStyleIDs: viewModel.disabledStyleIDs,
+            selectedStyleID: viewModel.selection.selectedPreset.id,
+            createStyle: viewModel.createCustomStyle,
+            updateStyle: viewModel.updateCustomStyle,
+            setStyleEnabled: viewModel.setStyleEnabled,
+            setStyleEditorPreviewActive: viewModel.setStyleEditorPreviewActive,
+            currentStyleName: viewModel.selection.selectedPreset.name,
+            locationText: viewModel.locationText,
+            requestLocation: viewModel.requestWatermarkLocation,
+            openRoute: openSettingsRoute,
+            close: closeSettingsOverlay
+        )
+    }
+
+    private func openSettingsOverlay() {
+        isAspectRatioPickerVisible = false
+        closeStylePreview()
+        withAnimation(.easeOut(duration: 0.18)) {
+            viewModel.isSettingsPresented = true
+        }
+    }
+
+    private func closeSettingsOverlay() {
+        withAnimation(.easeOut(duration: 0.18)) {
+            viewModel.isSettingsPresented = false
+        }
+    }
+
+    private func openSettingsRoute(_ route: CameraSettingsRoute) {
+        viewModel.isSettingsPresented = false
+        settingsNavigationPath.append(route)
     }
 
     private func openStylePreview() {
@@ -248,7 +297,7 @@ struct CameraView: View {
             VStack(spacing: 8) {
                 Spacer()
 
-                lensControl
+//                lensControl
 
                 modeSelector
 //                    .padding(.bottom, 12)
@@ -329,9 +378,7 @@ struct CameraView: View {
                         action: viewModel.toggleWatermark
                     )
 
-                    Button {
-                        viewModel.isSettingsPresented = true
-                    } label: {
+                    Button(action: openSettingsOverlay) {
                         Image(systemName: "gearshape.fill")
                     }
                 }
@@ -427,12 +474,15 @@ struct CameraView: View {
     }
 
     private var modeSelector: some View {
-        HStack(spacing: 28) {
+        HStack(spacing: 12) {
             modeButton(.video)
             modeButton(.photo)
         }
-        .font(.title3)
-        .frame(height: 52)
+        .font(.body)
+        .frame(height: 40)
+        .padding(.horizontal, 10)
+        .background(StyleCameraTheme.panelBackground.opacity(0.82), in: Capsule())
+        .padding(.bottom, 10)
     }
 
     private func modeButton(_ mode: CaptureMode) -> some View {
@@ -677,6 +727,61 @@ private struct CaptureAspectRatioPickerView: View {
     }
 }
 
+private struct WatermarkTemplateTextView: View {
+    let text: String
+    let template: WatermarkTemplate
+    let baseFont: Font
+    let compact: Bool
+
+    private var lines: [String] {
+        text.components(separatedBy: "\n")
+    }
+
+    @ViewBuilder
+    var body: some View {
+        switch template {
+        case .centeredTravel:
+            VStack(spacing: compact ? 2 : 4) {
+                if let title = lines.first {
+                    Text(title)
+                        .font(.system(size: compact ? 13 : 17, weight: .semibold))
+                }
+                ForEach(Array(lines.dropFirst().enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.system(size: compact ? 10 : 13, weight: .regular))
+                }
+            }
+            .multilineTextAlignment(.center)
+
+        case .weekdayQuote:
+            VStack(alignment: .leading, spacing: compact ? 2 : 3) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                    Text(line)
+                        .font(weekdayFont(for: index))
+                }
+            }
+            .multilineTextAlignment(.leading)
+
+        default:
+            Text(text)
+                .font(baseFont)
+        }
+    }
+
+    private func weekdayFont(for index: Int) -> Font {
+        switch index {
+        case 0:
+            return .system(size: compact ? 15 : 21, weight: .medium, design: .serif)
+        case 1:
+            return .system(size: compact ? 9 : 13, weight: .bold, design: .serif)
+        case 2, 4:
+            return .system(size: compact ? 7 : 10, weight: .regular, design: .monospaced)
+        default:
+            return .system(size: compact ? 10 : 14, weight: .regular)
+        }
+    }
+}
+
 private struct LiveWatermarkOverlayView: View {
     let watermark: WatermarkPreset
     let styleName: String
@@ -743,11 +848,15 @@ private struct LiveWatermarkOverlayView: View {
     }
 
     private var watermarkLabel: some View {
-        Text(displayText)
-            .font(font)
+        WatermarkTemplateTextView(
+            text: displayText,
+            template: watermark.template,
+            baseFont: font,
+            compact: false
+        )
             .foregroundStyle(foregroundColor)
-            .lineLimit(2)
-            .multilineTextAlignment(.center)
+            .lineLimit(6)
+            .multilineTextAlignment(watermark.template == .signature ? .center : .leading)
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
             .background(backgroundShape)
@@ -756,30 +865,13 @@ private struct LiveWatermarkOverlayView: View {
     }
 
     private var displayText: String {
-        var parts = [String]()
-        let text = watermark.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty {
-            parts.append(text)
-        }
-        if watermark.includeStyleName {
-            parts.append(styleName)
-        }
-        if watermark.includeDevice {
-            parts.append("iPhone")
-        }
-        if watermark.includeLocation {
-            let overrideText = watermark.locationOverrideText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !overrideText.isEmpty {
-                parts.append(overrideText)
-            } else if let locationText,
-                      !locationText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                parts.append(locationText)
-            }
-        }
-        if watermark.includeDate {
-            parts.append(Self.dateFormatter.string(from: Date()))
-        }
-        return parts.joined(separator: " · ")
+        watermark.displayText(
+            styleName: styleName,
+            deviceName: "iPhone",
+            locationText: locationText,
+            dateText: Self.dateFormatter.string(from: Date()),
+            weekdayText: Self.weekdayFormatter.string(from: Date())
+        )
     }
 
     private var watermarkImage: UIImage? {
@@ -826,9 +918,19 @@ private struct LiveWatermarkOverlayView: View {
         case .minimal:
             Color.clear
         case .darkBadge:
-            Capsule().fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            if watermark.template == .signature {
+                Capsule().fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            }
         case .lightBadge:
-            Capsule().fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            if watermark.template == .signature {
+                Capsule().fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            }
         case .film:
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.black.opacity(Double(watermark.opacity) * 0.58))
@@ -928,6 +1030,13 @@ private struct LiveWatermarkOverlayView: View {
         formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
 }
 
 private enum WatermarkDisplayOrientation: Equatable {
@@ -1016,7 +1125,15 @@ private struct LiveFrameOverlayView: View {
     var body: some View {
         GeometryReader { proxy in
             if preset.enabled {
-                frameShape(size: proxy.size)
+                let edgeInset: CGFloat = 1
+                let frameSize = CGSize(
+                    width: max(0, proxy.size.width - edgeInset * 2),
+                    height: max(0, proxy.size.height - edgeInset * 2)
+                )
+
+                frameShape(size: frameSize)
+                    .frame(width: frameSize.width, height: frameSize.height)
+                    .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
                     .allowsHitTesting(false)
             }
         }
@@ -1046,12 +1163,14 @@ private struct LiveFrameOverlayView: View {
                             .padding(.leading, 24)
                     }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .film:
             HStack {
                 filmRail
                 Spacer()
                 filmRail
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
                 RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
                     .strokeBorder(frameColor.opacity(Double(preset.opacity) * 0.92), lineWidth: frameLineWidth)
@@ -1219,6 +1338,7 @@ private struct StyleEditorRequest: Identifiable {
 }
 
 private struct CameraSettingsView: View {
+    let route: CameraSettingsRoute?
     @Binding var watermark: WatermarkPreset
     @Binding var photoFrame: PhotoFramePreset
     @Binding var guidanceSettings: PhotoGuidanceSettings
@@ -1235,8 +1355,8 @@ private struct CameraSettingsView: View {
     let currentStyleName: String
     let locationText: String?
     let requestLocation: () -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var navigationPath = [CameraSettingsRoute]()
+    let openRoute: (CameraSettingsRoute) -> Void
+    let close: () -> Void
     @State private var selectedWatermarkPhotoItem: PhotosPickerItem?
     @State private var watermarkImageImportError: String?
     @State private var managedStylePresets = [StylePreset]()
@@ -1246,12 +1366,7 @@ private struct CameraSettingsView: View {
     @State private var staticStyleThumbnails = [StylePreset.ID: UIImage]()
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            settingsOverview
-                .navigationDestination(for: CameraSettingsRoute.self) { route in
-                    settingsDestination(for: route)
-                }
-        }
+        settingsContent
         .tint(StyleCameraTheme.primary)
         .preferredColorScheme(.dark)
         .onAppear {
@@ -1278,58 +1393,93 @@ private struct CameraSettingsView: View {
         }
     }
 
+    @ViewBuilder
+    private var settingsContent: some View {
+        if let route {
+            settingsDestination(for: route)
+        } else {
+            settingsOverview
+        }
+    }
+
     private var settingsOverview: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                SettingsFeatureLinkCard(
-                    title: "风格配置",
-                    summary: "预设管理 / 参数调整 / 自定义风格",
-                    iconName: "camera.filters",
-                    tint: StyleCameraTheme.cyan,
-                    badge: "PRO",
-                    open: { navigationPath.append(.styles) }
-                )
+        VStack(spacing: 0) {
+//            HStack(spacing: 12) {
+//                Image(systemName: "gearshape.fill")
+//                    .foregroundStyle(StyleCameraTheme.primary)
+//                    .frame(width: 34, height: 34)
+//                    .background(StyleCameraTheme.primary.opacity(0.14), in: Circle())
+//
+//                Text("设置")
+//                    .font(.title3.weight(.semibold))
+//
+//                Spacer()
+//
+//                Button(action: close) {
+//                    Image(systemName: "xmark")
+//                        .font(.system(size: 14, weight: .bold))
+//                        .foregroundStyle(.secondary)
+//                        .frame(width: 34, height: 34)
+//                        .background(StyleCameraTheme.elevatedBackground, in: Circle())
+//                }
+//                .buttonStyle(.plain)
+//                .accessibilityLabel("关闭设置")
+//            }
+//
+//            Divider()
+//                .padding(.vertical, 12)
 
-                SettingsFeatureCard(
-                    title: "水印",
-                    summary: "时间 / 位置 / 风格 / 自定义签名",
-                    iconName: "signature",
-                    tint: StyleCameraTheme.primary,
-                    isEnabled: $watermark.enabled,
-                    open: { navigationPath.append(.watermark) }
-                )
+            ScrollView {
+                LazyVStack(spacing: 12) {
 
-                SettingsFeatureCard(
-                    title: "相框",
-                    summary: "白边 / 黑边 / 拍立得 / 胶片",
-                    iconName: "photo.on.rectangle.angled",
-                    tint: StyleCameraTheme.orange,
-                    isEnabled: $photoFrame.enabled,
-                    open: { navigationPath.append(.photoFrame) }
-                )
+                    SettingsFeatureCard(
+                        title: "水印",
+                        summary: "时间 / 位置 / 风格 / 自定义签名",
+                        iconName: "signature",
+                        tint: StyleCameraTheme.primary,
+                        isEnabled: $watermark.enabled,
+                        open: { openRoute(.watermark) }
+                    )
 
-                SettingsFeatureCard(
-                    title: "AI 指导",
-                    summary: "构图 / 光线 / 水平 / 清晰度提醒",
-                    iconName: "viewfinder",
-                    tint: StyleCameraTheme.coral,
-                    isEnabled: $guidanceSettings.isEnabled,
-                    open: { navigationPath.append(.guidance) }
-                )
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 20)
-        }
-        .background(StyleCameraTheme.screenGradient.ignoresSafeArea())
-        .navigationTitle("设置")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("完成") {
-                    dismiss()
+                    SettingsFeatureCard(
+                        title: "相框",
+                        summary: "白边 / 黑边 / 拍立得 / 胶片",
+                        iconName: "photo.on.rectangle.angled",
+                        tint: StyleCameraTheme.orange,
+                        isEnabled: $photoFrame.enabled,
+                        open: { openRoute(.photoFrame) }
+                    )
+
+                    SettingsFeatureCard(
+                        title: "AI 指导",
+                        summary: "构图 / 光线 / 水平 / 清晰度提醒",
+                        iconName: "viewfinder",
+                        tint: StyleCameraTheme.coral,
+                        isEnabled: $guidanceSettings.isEnabled,
+                        open: { openRoute(.guidance) }
+                    )
+
+                    SettingsFeatureLinkCard(
+                        title: "风格配置",
+                        summary: "预设管理 / 参数调整 / 自定义风格",
+                        iconName: "camera.filters",
+                        tint: StyleCameraTheme.cyan,
+                        badge: "PRO",
+                        open: { openRoute(.styles) }
+                    )
                 }
+                .padding(.bottom, 4)
             }
         }
+        .padding(16)
+        .frame(maxWidth: 520, maxHeight: 400)
+        .background(StyleCameraTheme.screenGradient.opacity(0.42))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.42), radius: 28, y: 14)
     }
 
     @ViewBuilder
@@ -1509,6 +1659,8 @@ private struct CameraSettingsView: View {
 
                     switch watermark.mode {
                     case .manual:
+                        SettingsSectionTitle("水印模板")
+                        WatermarkTemplatePicker(selection: watermarkTemplateBinding)
                         manualWatermarkControls
                     case .image:
                         imageWatermarkControls
@@ -1846,6 +1998,18 @@ private struct CameraSettingsView: View {
         )
     }
 
+    private var watermarkTemplateBinding: Binding<WatermarkTemplate> {
+        Binding(
+            get: { watermark.template },
+            set: { template in
+                watermark.template = template
+                watermark.position = template.recommendedPosition
+                watermark.customPosition = nil
+                watermark.visualStyle = template.recommendedVisualStyle
+            }
+        )
+    }
+
     private var imageScaleBinding: Binding<Double> {
         Binding(
             get: { Double(watermark.imageScale) },
@@ -2000,7 +2164,7 @@ private struct SettingsFeatureCard: View {
                     Image(systemName: iconName)
                         .font(.system(size: 23, weight: .semibold))
                         .foregroundStyle(tint)
-                        .frame(width: 54, height: 54)
+                        .frame(width: 40, height: 40)
                         .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 5) {
@@ -2008,10 +2172,10 @@ private struct SettingsFeatureCard: View {
                             .font(.headline)
                             .foregroundStyle(.primary)
 
-                        Text(summary)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
+//                        Text(summary)
+//                            .font(.footnote)
+//                            .foregroundStyle(.secondary)
+//                            .lineLimit(2)
 
                         Text(isEnabled ? "已启用" : "未启用")
                             .font(.caption)
@@ -2041,7 +2205,7 @@ private struct SettingsFeatureCard: View {
             .buttonStyle(.plain)
             .accessibilityLabel("进入\(title)设置")
         }
-        .padding(14)
+        .padding(10)
         .background(
             LinearGradient(
                 colors: [tint.opacity(0.22), StyleCameraTheme.panelBackground],
@@ -2071,7 +2235,7 @@ private struct SettingsFeatureLinkCard: View {
                 Image(systemName: iconName)
                     .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(tint)
-                    .frame(width: 54, height: 54)
+                    .frame(width: 40, height: 40)
                     .background(tint.opacity(0.11), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 5) {
@@ -2090,10 +2254,10 @@ private struct SettingsFeatureLinkCard: View {
                         }
                     }
 
-                    Text(summary)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+//                    Text(summary)
+//                        .font(.footnote)
+//                        .foregroundStyle(.secondary)
+//                        .lineLimit(2)
                 }
 
                 Spacer(minLength: 4)
@@ -2103,7 +2267,7 @@ private struct SettingsFeatureLinkCard: View {
                     .foregroundStyle(.tertiary)
                     .frame(width: 28, height: 44)
             }
-            .padding(14)
+            .padding(10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -2362,6 +2526,107 @@ private struct WatermarkModeSelector: View {
     }
 }
 
+private struct WatermarkTemplatePicker: View {
+    @Binding var selection: WatermarkTemplate
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(WatermarkTemplate.allCases, id: \.self) { template in
+                    templateButton(template)
+                }
+            }
+            .padding(.horizontal, 1)
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func templateButton(_ template: WatermarkTemplate) -> some View {
+        let isSelected = selection == template
+
+        return Button {
+            selection = template
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .topTrailing) {
+                    WatermarkTemplateSample(template: template)
+                        .frame(width: 126, height: 74)
+
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(StyleCameraTheme.primary)
+                            .background(.black.opacity(0.72), in: Circle())
+                            .padding(6)
+                    }
+                }
+
+                Text(template.title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? StyleCameraTheme.palePink : Color.primary)
+
+                Text(template.summary)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(8)
+            .frame(width: 142, alignment: .leading)
+            .background(
+                isSelected
+                    ? StyleCameraTheme.primary.opacity(0.16)
+                    : StyleCameraTheme.panelBackground,
+                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(
+                        isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider,
+                        lineWidth: isSelected ? 1.5 : 1
+                    )
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(template.title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct WatermarkTemplateSample: View {
+    let template: WatermarkTemplate
+
+    var body: some View {
+        ZStack(alignment: template.sampleAlignment) {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.28, green: 0.40, blue: 0.52),
+                    Color(red: 0.08, green: 0.13, blue: 0.18)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(Array(template.sampleLines.enumerated()), id: \.offset) { index, line in
+                    Text(line)
+                        .font(template.sampleFont(for: index))
+                        .lineLimit(1)
+                }
+            }
+            .foregroundStyle(template.sampleForegroundColor)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 5)
+            .background(
+                template.sampleBackground,
+                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
+            )
+            .padding(7)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+}
+
 private struct SettingsCompactToggle: View {
     let title: String
     let systemImage: String?
@@ -2515,10 +2780,10 @@ private struct GuidanceToggleRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                    Text(summary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+//                    Text(summary)
+//                        .font(.caption)
+//                        .foregroundStyle(.secondary)
+//                        .lineLimit(2)
                 }
             }
         }
@@ -2793,9 +3058,8 @@ private struct WatermarkPreviewView: View {
         if let image = previewStore.image {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
         } else {
             LinearGradient(
                 colors: [
@@ -2814,9 +3078,15 @@ private struct WatermarkPreviewView: View {
         switch watermark.mode {
         case .manual:
             if !previewText.isEmpty {
-                Text(previewText)
-                    .font(previewFont)
+                WatermarkTemplateTextView(
+                    text: previewText,
+                    template: watermark.template,
+                    baseFont: previewFont,
+                    compact: true
+                )
                     .foregroundStyle(foregroundColor)
+                    .lineLimit(6)
+                    .multilineTextAlignment(watermark.template == .signature ? .center : .leading)
                     .padding(.horizontal, horizontalPadding)
                     .padding(.vertical, verticalPadding)
                     .background(backgroundShape)
@@ -2842,29 +3112,13 @@ private struct WatermarkPreviewView: View {
     }
 
     private var previewText: String {
-        var parts = [String]()
-        let text = watermark.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !text.isEmpty {
-            parts.append(text)
-        }
-        if watermark.includeStyleName {
-            parts.append(styleName)
-        }
-        if watermark.includeDevice {
-            parts.append("iPhone")
-        }
-        if watermark.includeLocation {
-            let locationOverrideText = watermark.locationOverrideText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !locationOverrideText.isEmpty {
-                parts.append(locationOverrideText)
-            } else {
-                parts.append(locationText ?? "当前位置")
-            }
-        }
-        if watermark.includeDate {
-            parts.append("2026.07.05")
-        }
-        return parts.joined(separator: " · ")
+        watermark.displayText(
+            styleName: styleName,
+            deviceName: "iPhone 15 Pro",
+            locationText: locationText ?? "当前位置",
+            dateText: "2026.07.05",
+            weekdayText: "星期六"
+        )
     }
 
     private var watermarkImage: UIImage? {
@@ -2918,9 +3172,19 @@ private struct WatermarkPreviewView: View {
         case .minimal:
             Color.clear
         case .darkBadge:
-            Capsule().fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            if watermark.template == .signature {
+                Capsule().fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.black.opacity(Double(watermark.opacity) * 0.46))
+            }
         case .lightBadge:
-            Capsule().fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            if watermark.template == .signature {
+                Capsule().fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(.white.opacity(Double(watermark.opacity) * 0.72))
+            }
         case .film:
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(Color.black.opacity(Double(watermark.opacity) * 0.58))
@@ -2963,7 +3227,6 @@ private struct PhotoFramePreviewView: View {
     var body: some View {
         ZStack {
             previewBackground
-                .padding(contentPadding)
 
             LiveFrameOverlayView(preset: preset)
         }
@@ -2979,9 +3242,8 @@ private struct PhotoFramePreviewView: View {
         if let image = previewStore.image {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
         } else {
             LinearGradient(
                 colors: [
@@ -2991,26 +3253,6 @@ private struct PhotoFramePreviewView: View {
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
-            )
-        }
-    }
-
-    private var contentPadding: EdgeInsets {
-        let border = CGFloat(preset.borderWidth)
-        switch preset.style {
-        case .cleanWhite, .cleanBlack:
-            return EdgeInsets(top: border, leading: border, bottom: border, trailing: border)
-        case .instant:
-            return EdgeInsets(top: border, leading: border, bottom: border * 3.1, trailing: border)
-        case .film:
-            return EdgeInsets(top: border * 0.9, leading: border * 1.8, bottom: border * 0.9, trailing: border * 1.8)
-        case .minimal:
-            let minimalBorder = border * 0.55
-            return EdgeInsets(
-                top: minimalBorder,
-                leading: minimalBorder,
-                bottom: minimalBorder,
-                trailing: minimalBorder
             )
         }
     }
@@ -3105,6 +3347,118 @@ private extension WatermarkMode {
         switch self {
         case .manual: return "手动配置"
         case .image: return "PNG 图片"
+        }
+    }
+}
+
+private extension WatermarkTemplate {
+    var title: String {
+        switch self {
+        case .signature: return "简约签名"
+        case .travelCard: return "旅拍卡片"
+        case .dateStamp: return "日期印记"
+        case .locationCard: return "地点标签"
+        case .stacked: return "三行故事"
+        case .centeredTravel: return "居中旅拍"
+        case .weekdayQuote: return "星期语录"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .signature: return "单行简约"
+        case .travelCard: return "旅行信息卡"
+        case .dateStamp: return "日期优先"
+        case .locationCard: return "地点优先"
+        case .stacked: return "分层排列"
+        case .centeredTravel: return "标题居中"
+        case .weekdayQuote: return "日期与语录"
+        }
+    }
+
+    var recommendedPosition: WatermarkPosition {
+        switch self {
+        case .signature: return .bottomRight
+        case .travelCard: return .bottomLeft
+        case .dateStamp: return .topLeft
+        case .locationCard: return .bottomCenter
+        case .stacked: return .topRight
+        case .centeredTravel: return .bottomCenter
+        case .weekdayQuote: return .bottomLeft
+        }
+    }
+
+    var recommendedVisualStyle: WatermarkVisualStyle {
+        switch self {
+        case .signature: return .minimal
+        case .travelCard, .stacked: return .darkBadge
+        case .dateStamp: return .film
+        case .locationCard, .centeredTravel, .weekdayQuote: return .lightBadge
+        }
+    }
+
+    var sampleAlignment: Alignment {
+        switch recommendedPosition {
+        case .topLeft: return .topLeading
+        case .topRight: return .topTrailing
+        case .bottomLeft: return .bottomLeading
+        case .bottomRight: return .bottomTrailing
+        case .bottomCenter: return .bottom
+        case .custom: return .center
+        }
+    }
+
+    var sampleLines: [String] {
+        switch self {
+        case .signature:
+            return ["我的旅拍 · 清新"]
+        case .travelCard:
+            return ["▣ 我的旅拍  清新", "2026.07.05 | 杭州"]
+        case .dateStamp:
+            return ["2026.07.05", "我的旅拍 · 清新"]
+        case .locationCard:
+            return ["杭州 · 西湖", "我的旅拍 · 清新"]
+        case .stacked:
+            return ["我的旅拍", "清新 · 杭州", "2026.07.05"]
+        case .centeredTravel:
+            return ["— 我的旅拍 —", "中国 · 北京", "2026-07-30"]
+        case .weekdayQuote:
+            return ["星期六", "2026/07/30", "────", "勇往直前 不畏艰险"]
+        }
+    }
+
+    var sampleForegroundColor: Color {
+        recommendedVisualStyle == .lightBadge ? .black.opacity(0.78) : .white.opacity(0.92)
+    }
+
+    func sampleFont(for index: Int) -> Font {
+        switch self {
+        case .centeredTravel:
+            return index == 0 ? .caption.weight(.semibold) : .system(size: 8)
+        case .weekdayQuote:
+            switch index {
+            case 0: return .system(size: 13, weight: .medium, design: .serif)
+            case 1: return .system(size: 8, weight: .bold, design: .serif)
+            case 2: return .system(size: 6, design: .monospaced)
+            default: return .system(size: 8)
+            }
+        case .dateStamp:
+            return .caption2.monospaced()
+        default:
+            return .caption2
+        }
+    }
+
+    var sampleBackground: AnyShapeStyle {
+        switch recommendedVisualStyle {
+        case .minimal:
+            return AnyShapeStyle(Color.clear)
+        case .darkBadge:
+            return AnyShapeStyle(Color.black.opacity(0.52))
+        case .lightBadge:
+            return AnyShapeStyle(Color.white.opacity(0.76))
+        case .film:
+            return AnyShapeStyle(Color.black.opacity(0.62))
         }
     }
 }
