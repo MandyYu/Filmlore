@@ -48,6 +48,48 @@
 			<key>uniqueIdentifier</key>
 			<string>B0C28B80-0E47-419B-92D5-F12ADDF34973</string>
 		</dict>
+		<key>B32C4915-DC22-47AB-86BF-5ADE443F903D</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>B32C4915-DC22-47AB-86BF-5ADE443F903D.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>6</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>StyleCamera project</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>StyleCamera</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building project StyleCamera with scheme StyleCamera and configuration Debug</string>
+			<key>timeStartedRecording</key>
+			<real>807419649.86395204</real>
+			<key>timeStoppedRecording</key>
+			<real>807419654.37753403</real>
+			<key>title</key>
+			<string>Building project StyleCamera with scheme StyleCamera and configuration Debug</string>
+			<key>uniqueIdentifier</key>
+			<string>B32C4915-DC22-47AB-86BF-5ADE443F903D</string>
+		</dict>
 	</dict>
 </dict>
 </plist>

@@ -315,8 +315,8 @@ final class CameraViewModel: ObservableObject {
             self?.renderPreview(image)
         }
 
-        cameraEngine.onPhotoCaptured = { [weak self] data in
-            self?.processCapturedPhoto(data)
+        cameraEngine.onPhotoCaptured = { [weak self] image in
+            self?.processCapturedPhoto(image)
         }
     }
 
@@ -717,11 +717,7 @@ final class CameraViewModel: ObservableObject {
         }
     }
 
-    private func processCapturedPhoto(_ data: Data) {
-        guard let input = CIImage(
-            data: data,
-            options: [.applyOrientationProperty: true]
-        ) else { return }
+    private func processCapturedPhoto(_ input: CIImage) {
         let style = selection.selectedPreset
         let watermark = watermark
         let photoFrame = photoFrame
@@ -754,7 +750,7 @@ final class CameraViewModel: ObservableObject {
                     of: output,
                     colorSpace: colorSpace,
                     options: [
-                        kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.92
+                        kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.98
                     ]
                   ) else {
                 return

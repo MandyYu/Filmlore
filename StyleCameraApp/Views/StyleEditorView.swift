@@ -10,8 +10,9 @@ struct StyleEditorView: View {
     let saveAsNew: (String, StyleParams) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var name: String
+    @State private var newStyleName: String
     @State private var params: StyleParams
+    @State private var isShowingNamePrompt = false
 
     init(
         preset: StylePreset,
@@ -23,7 +24,7 @@ struct StyleEditorView: View {
         isCreatingNew = true
         saveChanges = nil
         saveAsNew = save
-        _name = State(initialValue: preset.isBuiltIn ? "\(preset.name) 副本" : preset.name)
+        _newStyleName = State(initialValue: "\(preset.name) 副本")
         _params = State(initialValue: preset.params)
     }
 
@@ -40,15 +41,13 @@ struct StyleEditorView: View {
         self.saveChanges = saveChanges
         self.saveAsNew = saveAsNew
 
-        let initialName: String
+        let suggestedName: String
         if isCreatingNew {
-            initialName = "我的风格"
-        } else if preset.isBuiltIn {
-            initialName = "\(preset.name) 副本"
+            suggestedName = "我的风格"
         } else {
-            initialName = preset.name
+            suggestedName = "\(preset.name) 副本"
         }
-        _name = State(initialValue: initialName)
+        _newStyleName = State(initialValue: suggestedName)
         _params = State(initialValue: preset.params)
     }
 
@@ -73,75 +72,83 @@ struct StyleEditorView: View {
                     Divider()
                 }
 
-                Form {
-                    Section("风格") {
-                        TextField("名称", text: $name)
-                    }
+                ScrollView {
+                    VStack(spacing: 16) {
+                        StyleParameterControls(params: $params)
 
-                    Section("参数") {
-                        signedSlider("曝光", value: $params.exposure)
-                        signedSlider("鲜明度", value: $params.brilliance)
-                        signedSlider("高光", value: $params.highlights)
-                        signedSlider("阴影", value: $params.shadows)
-                        signedSlider("对比度", value: $params.contrast)
-                        signedSlider("黑点", value: $params.blackPoint)
-                        signedSlider("亮度", value: $params.brightness)
-                        signedSlider("饱和度", value: $params.saturation)
-                        signedSlider("自然饱和度", value: $params.vibrance)
-                        signedSlider("色温", value: $params.warmth)
-                        signedSlider("色调", value: $params.tint)
-                        signedSlider("锐度", value: $params.sharpness)
-                        positiveSlider("褪色", value: $params.fade)
-                        positiveSlider("颗粒", value: $params.grain)
-                        positiveSlider("暗角", value: $params.vignette)
-                    }
-
-                    Section {
-                        if let saveChanges, !isCreatingNew {
-                            Button {
-                                saveChanges(preset.id, normalizedName, normalizedParams)
-                                dismiss()
-                            } label: {
-                                Text("保存修改")
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-
-                        Button {
-                            saveAsNew(normalizedName, normalizedParams)
-                            dismiss()
-                        } label: {
-                            Text(isCreatingNew ? "保存新风格" : "另存为新风格")
+                        Button(action: requestSaveAsNew) {
+                            Text("另存为新风格")
+                                .font(.headline)
+                                .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(
+                                    StyleCameraTheme.primaryGradient,
+                                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                )
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                }
                         }
-                    } footer: {
+                        .buttonStyle(.plain)
+
                         Text("自定义风格属于 StyleCamera Pro 功能。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
                 }
-                .scrollContentBackground(.hidden)
-                .background(StyleCameraTheme.screenBackground)
+                .scrollIndicators(.hidden)
             }
-            .background(StyleCameraTheme.screenBackground)
+            .background(StyleCameraTheme.screenGradient)
             .tint(StyleCameraTheme.primary)
             .preferredColorScheme(.dark)
-            .navigationTitle(isCreatingNew ? "新建风格" : "编辑风格")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成") {
-                        dismiss()
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: dismiss.callAsFunction) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 32, height: 32)
                     }
+                    .accessibilityLabel("关闭")
                 }
+
+                ToolbarItem(placement: .principal) {
+                    Text("编辑风格")
+                        .font(.headline)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: saveCurrentStyle) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 16, weight: .bold))
+                            .frame(width: 32, height: 32)
+                    }
+                    .accessibilityLabel("保存")
+                }
+            }
+//            .toolbarBackground(StyleCameraTheme.screenBackground, for: .navigationBar)
+//            .toolbarBackground(.visible, for: .navigationBar)
+            .alert("另存为新风格", isPresented: $isShowingNamePrompt) {
+                TextField("风格名称", text: $newStyleName)
+                Button("取消", role: .cancel) {}
+                Button("保存", action: saveNamedStyle)
+            } message: {
+                Text("输入一个便于识别的风格名称")
             }
         }
     }
 
-    private var normalizedName: String {
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    private var normalizedNewStyleName: String {
+        let trimmedName = newStyleName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedName.isEmpty {
             return trimmedName
         }
-        return isCreatingNew ? "我的风格" : preset.name
+        return "我的风格"
     }
 
     private var normalizedParams: StyleParams {
@@ -162,6 +169,77 @@ struct StyleEditorView: View {
             grain: params.grain,
             vignette: params.vignette
         )
+    }
+
+    private func saveCurrentStyle() {
+        guard let saveChanges, !isCreatingNew else {
+            requestSaveAsNew()
+            return
+        }
+
+        saveChanges(preset.id, preset.name, normalizedParams)
+        dismiss()
+    }
+
+    private func requestSaveAsNew() {
+        isShowingNamePrompt = true
+    }
+
+    private func saveNamedStyle() {
+        saveAsNew(normalizedNewStyleName, normalizedParams)
+        dismiss()
+    }
+}
+
+private struct StyleParameterControls: View {
+    @Binding var params: StyleParams
+
+    var body: some View {
+        VStack(spacing: 0) {
+            signedSlider("曝光", value: $params.exposure)
+            divider
+            signedSlider("鲜明度", value: $params.brilliance)
+            divider
+            signedSlider("高光", value: $params.highlights)
+            divider
+            signedSlider("阴影", value: $params.shadows)
+            divider
+            signedSlider("对比度", value: $params.contrast)
+            divider
+            signedSlider("黑点", value: $params.blackPoint)
+            divider
+            signedSlider("亮度", value: $params.brightness)
+            divider
+            signedSlider("饱和度", value: $params.saturation)
+            divider
+            signedSlider("自然饱和度", value: $params.vibrance)
+            divider
+            signedSlider("色温", value: $params.warmth)
+            divider
+            signedSlider("色调", value: $params.tint)
+            divider
+            signedSlider("锐度", value: $params.sharpness)
+            divider
+            positiveSlider("褪色", value: $params.fade)
+            divider
+            positiveSlider("颗粒", value: $params.grain)
+            divider
+            positiveSlider("暗角", value: $params.vignette)
+        }
+        .padding(.horizontal, 14)
+        .background(
+            StyleCameraTheme.panelBackground,
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private var divider: some View {
+        Divider()
+            .overlay(StyleCameraTheme.divider.opacity(0.45))
     }
 
     private func signedSlider(_ title: String, value: Binding<Float>) -> some View {
@@ -193,14 +271,14 @@ struct StyleEditorView: View {
                 step: 1
             )
             .accessibilityLabel(title)
-            .tint(StyleCameraTheme.primary)
+            .tint(StyleCameraTheme.primaryGradient)
 
             Text(parameterValueText(value.wrappedValue, range: range))
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .frame(width: 42, alignment: .trailing)
         }
-        .frame(minHeight: 32)
+        .frame(minHeight: 42)
     }
 
     private func parameterValueText(

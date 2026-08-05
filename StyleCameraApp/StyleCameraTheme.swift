@@ -2,6 +2,7 @@ import SwiftUI
 
 enum StyleCameraTheme {
     static let primary = Color(red: 1.00, green: 0.36, blue: 0.54)
+//    static let primary = Color(red: 1.0, green: 0.36, blue: 0.54)
     static let coral = Color(red: 1.00, green: 0.48, blue: 0.42)
     static let orange = Color(red: 1.00, green: 0.61, blue: 0.29)
     static let deepPurple = Color(red: 0.35, green: 0.29, blue: 0.54)
@@ -21,6 +22,17 @@ enum StyleCameraTheme {
         colors: [primary, coral],
         startPoint: .leading,
         endPoint: .trailing
+    )
+
+    static let styleSelectionBorderGradient = AngularGradient(
+        gradient: Gradient(colors: [
+            primary,
+            Color(red: 0.66, green: 0.33, blue: 0.97),
+            accentBlue,
+            Color(red: 0.66, green: 0.33, blue: 0.97),
+            primary
+        ]),
+        center: .center
     )
 
     static let warmGradient = LinearGradient(

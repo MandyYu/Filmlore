@@ -33,6 +33,16 @@
 		100000000000000000000018 /* food-ins-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* food-ins-cover.png */; };
 		100000000000000000000019 /* StyleCameraApp/StyleCameraTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001A /* StyleCameraApp/StyleCameraTheme.swift */; };
 		10000000000000000000001A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001B /* Assets.xcassets */; };
+		10000000000000000000001B /* cool-white-skin-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001C /* cool-white-skin-cover.png */; };
+		10000000000000000000001C /* fuji-fresh-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001D /* fuji-fresh-cover.png */; };
+		10000000000000000000001D /* night-mood-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001E /* night-mood-cover.png */; };
+		10000000000000000000001E /* japanese-cream-cover.png in Resources */ = {isa = PBXBuildFile; fileRef = 20000000000000000000001F /* japanese-cream-cover.png */; };
+		10000000000000000000001F /* photo-frame-sample.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000020 /* photo-frame-sample.png */; };
+		100000000000000000000020 /* frame-style-1@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000021 /* frame-style-1@2x.png */; };
+		100000000000000000000021 /* frame-style-2@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000022 /* frame-style-2@2x.png */; };
+		100000000000000000000022 /* frame-style-3@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* frame-style-3@2x.png */; };
+		100000000000000000000023 /* frame-style-4@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000024 /* frame-style-4@2x.png */; };
+		100000000000000000000024 /* frame-style-5@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000025 /* frame-style-5@2x.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -87,6 +97,16 @@
 		200000000000000000000019 /* food-ins-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/food-ins-cover.png; sourceTree = "<group>"; };
 		20000000000000000000001A /* StyleCameraApp/StyleCameraTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/StyleCameraTheme.swift; sourceTree = "<group>"; };
 		20000000000000000000001B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = StyleCameraApp/Assets.xcassets; sourceTree = "<group>"; };
+		20000000000000000000001C /* cool-white-skin-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/cool-white-skin-cover.png; sourceTree = "<group>"; };
+		20000000000000000000001D /* fuji-fresh-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/fuji-fresh-cover.png; sourceTree = "<group>"; };
+		20000000000000000000001E /* night-mood-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/night-mood-cover.png; sourceTree = "<group>"; };
+		20000000000000000000001F /* japanese-cream-cover.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/StyleCovers/japanese-cream-cover.png; sourceTree = "<group>"; };
+		200000000000000000000020 /* photo-frame-sample.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = StyleCameraApp/Resources/FrameSamples/photo-frame-sample.png; sourceTree = "<group>"; };
+		200000000000000000000021 /* frame-style-1@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-1@2x.png"; sourceTree = "<group>"; };
+		200000000000000000000022 /* frame-style-2@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-2@2x.png"; sourceTree = "<group>"; };
+		200000000000000000000023 /* frame-style-3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-3@2x.png"; sourceTree = "<group>"; };
+		200000000000000000000024 /* frame-style-4@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-4@2x.png"; sourceTree = "<group>"; };
+		200000000000000000000025 /* frame-style-5@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-5@2x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +170,16 @@
 				200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */,
 				200000000000000000000018 /* city-texture-cover.png */,
 				200000000000000000000019 /* food-ins-cover.png */,
+				20000000000000000000001C /* cool-white-skin-cover.png */,
+				20000000000000000000001D /* fuji-fresh-cover.png */,
+				20000000000000000000001E /* night-mood-cover.png */,
+				20000000000000000000001F /* japanese-cream-cover.png */,
+				200000000000000000000020 /* photo-frame-sample.png */,
+				200000000000000000000021 /* frame-style-1@2x.png */,
+				200000000000000000000022 /* frame-style-2@2x.png */,
+				200000000000000000000023 /* frame-style-3@2x.png */,
+				200000000000000000000024 /* frame-style-4@2x.png */,
+				200000000000000000000025 /* frame-style-5@2x.png */,
 				20000000000000000000001B /* Assets.xcassets */,
 				200000000000000000000012 /* StyleCameraApp/Info.plist */,
 			);
@@ -247,6 +277,16 @@
 			files = (
 				100000000000000000000017 /* city-texture-cover.png in Resources */,
 				100000000000000000000018 /* food-ins-cover.png in Resources */,
+				10000000000000000000001B /* cool-white-skin-cover.png in Resources */,
+				10000000000000000000001C /* fuji-fresh-cover.png in Resources */,
+				10000000000000000000001D /* night-mood-cover.png in Resources */,
+				10000000000000000000001E /* japanese-cream-cover.png in Resources */,
+				10000000000000000000001F /* photo-frame-sample.png in Resources */,
+				100000000000000000000020 /* frame-style-1@2x.png in Resources */,
+				100000000000000000000021 /* frame-style-2@2x.png in Resources */,
+				100000000000000000000022 /* frame-style-3@2x.png in Resources */,
+				100000000000000000000023 /* frame-style-4@2x.png in Resources */,
+				100000000000000000000024 /* frame-style-5@2x.png in Resources */,
 				10000000000000000000001A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

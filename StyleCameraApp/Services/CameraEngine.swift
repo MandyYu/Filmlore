@@ -1,6 +1,7 @@
 import AVFoundation
 import CoreImage
 import Foundation
+import ImageIO
 import StyleCameraCore
 import UIKit
 
@@ -17,7 +18,7 @@ final class CameraEngine: NSObject {
     private var lastPhotoRotationAngle: CGFloat = 90
 
     var onPreviewFrame: ((CIImage) -> Void)?
-    var onPhotoCaptured: ((Data) -> Void)?
+    var onPhotoCaptured: ((CIImage) -> Void)?
 
     func configure() {
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
@@ -41,6 +42,11 @@ final class CameraEngine: NSObject {
     func capturePhoto(flashMode: AVCaptureDevice.FlashMode) {
         sessionQueue.async {
             let settings = AVCapturePhotoSettings()
+            settings.photoQualityPrioritization = .quality
+            if self.photoOutput.maxPhotoDimensions.width > 0,
+               self.photoOutput.maxPhotoDimensions.height > 0 {
+                settings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
+            }
             if self.photoOutput.supportedFlashModes.contains(flashMode) {
                 settings.flashMode = flashMode
             }
@@ -133,6 +139,8 @@ final class CameraEngine: NSObject {
             session.addOutput(photoOutput)
         }
 
+        configurePhotoOutput(for: device)
+
         updateVideoOrientation()
         session.commitConfiguration()
 
@@ -153,6 +161,18 @@ final class CameraEngine: NSObject {
         }
 
         return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
+    }
+
+    private func configurePhotoOutput(for device: AVCaptureDevice) {
+        photoOutput.maxPhotoQualityPrioritization = .quality
+
+        guard let largestDimensions = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
+            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+        }) else {
+            return
+        }
+
+        photoOutput.maxPhotoDimensions = largestDimensions
     }
 
     private func applyDisplayedZoomFactor(
@@ -267,10 +287,24 @@ extension CameraEngine: AVCapturePhotoCaptureDelegate {
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
-        guard error == nil,
-              let data = photo.fileDataRepresentation() else {
+        guard error == nil else {
             return
         }
-        onPhotoCaptured?(data)
+
+        if let cgImage = photo.cgImageRepresentation() {
+            let exifOrientation = (photo.metadata[String(kCGImagePropertyOrientation)] as? NSNumber)?.int32Value ?? 1
+            let image = CIImage(cgImage: cgImage).oriented(forExifOrientation: exifOrientation)
+            onPhotoCaptured?(image)
+            return
+        }
+
+        guard let data = photo.fileDataRepresentation(),
+              let image = CIImage(
+                data: data,
+                options: [.applyOrientationProperty: true]
+              ) else {
+            return
+        }
+        onPhotoCaptured?(image)
     }
 }

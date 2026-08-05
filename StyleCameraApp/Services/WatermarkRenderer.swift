@@ -397,6 +397,92 @@ final class WatermarkRenderer {
     }
 }
 
+struct PhotoFrameLayoutMetrics {
+    let contentRect: CGRect
+    let cornerRadius: CGFloat
+    let shadowWidth: CGFloat
+    let markerLineWidth: CGFloat
+    let markerLength: CGFloat
+    let markerOffset: CGFloat
+
+    static func make(in size: CGSize, preset: PhotoFramePreset) -> PhotoFrameLayoutMetrics {
+        let width = max(1, size.width)
+        let height = max(1, size.height)
+        let shortSide = min(width, height)
+        let thicknessScale = min(1.7, max(0.25, CGFloat(preset.borderWidth) / 24))
+        let baseInsets: UIEdgeInsets
+
+        switch preset.style {
+        case .cleanWhite:
+            // Group 1: 10/120 side margins, 10/160 top, 30/160 bottom.
+            baseInsets = UIEdgeInsets(
+                top: height * 0.0625,
+                left: width / 12,
+                bottom: height * 0.1875,
+                right: width / 12
+            )
+        case .cleanBlack:
+            // Group 2: an even 10 px border in the 120 x 160 reference.
+            baseInsets = UIEdgeInsets(
+                top: height * 0.0625,
+                left: width / 12,
+                bottom: height * 0.0625,
+                right: width / 12
+            )
+        case .instant:
+            // Group 3: full-width image with 20 px top and bottom breathing room.
+            baseInsets = UIEdgeInsets(
+                top: height * 0.125,
+                left: 0,
+                bottom: height * 0.125,
+                right: 0
+            )
+        case .film:
+            // Group 4: edge-to-edge image with a 20 px caption area below it.
+            baseInsets = UIEdgeInsets(
+                top: 0,
+                left: 0,
+                bottom: height * 0.125,
+                right: 0
+            )
+        case .minimal:
+            // Group 5: centered image with viewfinder marks outside the opening.
+            baseInsets = UIEdgeInsets(
+                top: height * 0.125,
+                left: width / 12,
+                bottom: height * 0.125,
+                right: width / 12
+            )
+        }
+
+        let insets = UIEdgeInsets(
+            top: baseInsets.top * thicknessScale,
+            left: baseInsets.left * thicknessScale,
+            bottom: baseInsets.bottom * thicknessScale,
+            right: baseInsets.right * thicknessScale
+        )
+        let contentRect = CGRect(
+            x: insets.left,
+            y: insets.top,
+            width: max(1, width - insets.left - insets.right),
+            height: max(1, height - insets.top - insets.bottom)
+        )
+        let cornerRadius = min(
+            min(contentRect.width, contentRect.height) / 2,
+            shortSide * CGFloat(preset.cornerRadius) / 375
+        )
+
+        return PhotoFrameLayoutMetrics(
+            contentRect: contentRect,
+            cornerRadius: cornerRadius,
+            shadowWidth: max(1, shortSide * 3 / 375),
+            markerLineWidth: max(1, shortSide * 1.6 / 120),
+            markerLength: min(contentRect.width, contentRect.height) * 0.28,
+            markerOffset: shortSide * 4 / 120
+        )
+    }
+}
+
 final class PhotoFrameRenderer {
     private let context: CIContext
 
@@ -415,49 +501,33 @@ final class PhotoFrameRenderer {
             return normalizedImage
         }
 
-        let imageSize = imageExtent.size
-        let insets = Self.insets(for: preset, imageSize: imageSize)
-        let canvasSize = imageSize
+        let canvasSize = imageExtent.size
         let canvasRect = CGRect(origin: .zero, size: canvasSize)
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         format.opaque = true
         let renderer = UIGraphicsImageRenderer(size: canvasSize, format: format)
 
-        let cornerRadius = Self.scaledCornerRadius(for: preset, imageSize: imageSize)
+        let layout = PhotoFrameLayoutMetrics.make(in: canvasSize, preset: preset)
         let framedImage = renderer.image { renderContext in
             UIImage(cgImage: cgImage).draw(in: canvasRect)
 
-            switch preset.style {
-            case .cleanWhite, .cleanBlack:
-                Self.drawBorder(
-                    in: canvasRect,
-                    lineWidth: insets.left,
-                    cornerRadius: cornerRadius,
-                    preset: preset
-                )
-            case .instant:
-                Self.drawInstantFrame(
-                    in: canvasRect,
-                    insets: insets,
-                    cornerRadius: cornerRadius,
-                    preset: preset,
+            if preset.shadowEnabled {
+                Self.drawOpeningShadow(
+                    layout: layout,
                     context: renderContext.cgContext
                 )
-            case .film:
-                Self.drawFilmFrame(
-                    in: canvasRect,
-                    insets: insets,
-                    cornerRadius: cornerRadius,
+            }
+            Self.drawFrameMask(
+                in: canvasRect,
+                layout: layout,
+                preset: preset
+            )
+            if preset.style == .minimal {
+                Self.drawViewfinderMarks(
+                    layout: layout,
                     preset: preset,
                     context: renderContext.cgContext
-                )
-            case .minimal:
-                Self.drawBorder(
-                    in: canvasRect,
-                    lineWidth: insets.left,
-                    cornerRadius: cornerRadius,
-                    preset: preset
                 )
             }
         }
@@ -479,36 +549,6 @@ final class PhotoFrameRenderer {
         )
     }
 
-    private static func insets(for preset: PhotoFramePreset, imageSize: CGSize) -> UIEdgeInsets {
-        let shortSide = min(imageSize.width, imageSize.height)
-        let border = max(10, shortSide * CGFloat(preset.borderWidth) / 375)
-        switch preset.style {
-        case .cleanWhite, .cleanBlack:
-            return UIEdgeInsets(top: border, left: border, bottom: border, right: border)
-        case .instant:
-            let side = max(border, shortSide * 0.04)
-            let top = max(border, shortSide * 0.04)
-            let bottom = max(border * 3.1, shortSide * 0.12)
-            return UIEdgeInsets(top: top, left: side, bottom: bottom, right: side)
-        case .film:
-            let horizontal = max(border * 1.8, shortSide * 0.055)
-            let vertical = max(border * 0.9, shortSide * 0.025)
-            return UIEdgeInsets(top: vertical, left: horizontal, bottom: vertical, right: horizontal)
-        case .minimal:
-            let minimalBorder = max(8, border * 0.55)
-            return UIEdgeInsets(
-                top: minimalBorder,
-                left: minimalBorder,
-                bottom: minimalBorder,
-                right: minimalBorder
-            )
-        }
-    }
-
-    private static func scaledCornerRadius(for preset: PhotoFramePreset, imageSize: CGSize) -> CGFloat {
-        min(imageSize.width, imageSize.height) * CGFloat(preset.cornerRadius) / 375
-    }
-
     private static func backgroundColor(for preset: PhotoFramePreset) -> UIColor {
         let alpha = CGFloat(preset.opacity)
         switch preset.backgroundColor {
@@ -527,111 +567,73 @@ final class PhotoFrameRenderer {
         }
     }
 
-    private static func drawBorder(
+    private static func drawOpeningShadow(
+        layout: PhotoFrameLayoutMetrics,
+        context: CGContext
+    ) {
+        context.saveGState()
+        context.setShadow(
+            offset: CGSize(width: 0, height: layout.shadowWidth),
+            blur: layout.shadowWidth * 2.5,
+            color: UIColor.black.withAlphaComponent(0.34).cgColor
+        )
+        UIColor.black.withAlphaComponent(0.28).setStroke()
+        let path = UIBezierPath(
+            roundedRect: layout.contentRect,
+            cornerRadius: layout.cornerRadius
+        )
+        path.lineWidth = layout.shadowWidth
+        path.stroke()
+        context.restoreGState()
+    }
+
+    private static func drawFrameMask(
         in rect: CGRect,
-        lineWidth: CGFloat,
-        cornerRadius: CGFloat,
+        layout: PhotoFrameLayoutMetrics,
         preset: PhotoFramePreset
     ) {
-        let safeLineWidth = max(1, lineWidth)
-        let pathRect = rect.insetBy(dx: safeLineWidth / 2, dy: safeLineWidth / 2)
-        let path = UIBezierPath(
-            roundedRect: pathRect,
-            cornerRadius: max(0, cornerRadius - safeLineWidth / 2)
+        let path = UIBezierPath(rect: rect)
+        path.append(
+            UIBezierPath(
+                roundedRect: layout.contentRect,
+                cornerRadius: layout.cornerRadius
+            )
         )
+        path.usesEvenOddFillRule = true
+        backgroundColor(for: preset).setFill()
+        path.fill()
+    }
 
-        if preset.shadowEnabled {
-            UIColor.black.withAlphaComponent(0.28).setStroke()
-            path.lineWidth = safeLineWidth + max(3, safeLineWidth * 0.18)
-            path.stroke()
-        }
+    private static func drawViewfinderMarks(
+        layout: PhotoFrameLayoutMetrics,
+        preset: PhotoFramePreset,
+        context: CGContext
+    ) {
+        context.saveGState()
+        context.setLineWidth(layout.markerLineWidth)
+        context.setLineCap(.square)
+        markerColor(for: preset).setStroke()
 
-        backgroundColor(for: preset).setStroke()
-        path.lineWidth = safeLineWidth
+        let rect = layout.contentRect
+        let offset = layout.markerOffset
+        let length = layout.markerLength
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: rect.minX - offset, y: rect.minY + length - offset))
+        path.addLine(to: CGPoint(x: rect.minX - offset, y: rect.minY - offset))
+        path.addLine(to: CGPoint(x: rect.minX + length - offset, y: rect.minY - offset))
+        path.move(to: CGPoint(x: rect.maxX - length + offset, y: rect.maxY + offset))
+        path.addLine(to: CGPoint(x: rect.maxX + offset, y: rect.maxY + offset))
+        path.addLine(to: CGPoint(x: rect.maxX + offset, y: rect.maxY - length + offset))
         path.stroke()
-    }
-
-    private static func drawInstantFrame(
-        in rect: CGRect,
-        insets: UIEdgeInsets,
-        cornerRadius: CGFloat,
-        preset: PhotoFramePreset,
-        context: CGContext
-    ) {
-        drawBorder(
-            in: rect,
-            lineWidth: insets.left,
-            cornerRadius: cornerRadius,
-            preset: preset
-        )
-
-        context.saveGState()
-        UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
-        let captionRect = CGRect(
-            x: rect.minX,
-            y: rect.maxY - insets.bottom,
-            width: rect.width,
-            height: insets.bottom
-        )
-        backgroundColor(for: preset).setFill()
-        UIBezierPath(rect: captionRect).fill()
-
-        let lineHeight = max(2, rect.width * 0.002)
-        let lineRect = CGRect(
-            x: rect.minX + max(insets.left, rect.width * 0.06),
-            y: captionRect.minY + insets.bottom * 0.36,
-            width: rect.width * 0.34,
-            height: lineHeight
-        )
-        UIColor.black.withAlphaComponent(CGFloat(preset.opacity) * 0.14).setFill()
-        UIBezierPath(roundedRect: lineRect, cornerRadius: lineHeight / 2).fill()
         context.restoreGState()
     }
 
-    private static func drawFilmFrame(
-        in rect: CGRect,
-        insets: UIEdgeInsets,
-        cornerRadius: CGFloat,
-        preset: PhotoFramePreset,
-        context: CGContext
-    ) {
-        context.saveGState()
-        UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).addClip()
-        backgroundColor(for: preset).setFill()
-        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.minY, width: insets.left, height: rect.height)).fill()
-        UIBezierPath(rect: CGRect(x: rect.maxX - insets.right, y: rect.minY, width: insets.right, height: rect.height)).fill()
-        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: insets.top)).fill()
-        UIBezierPath(rect: CGRect(x: rect.minX, y: rect.maxY - insets.bottom, width: rect.width, height: insets.bottom)).fill()
-        context.restoreGState()
-
-        drawFilmPerforations(
-            in: rect,
-            railWidth: min(insets.left, insets.right),
-            verticalInset: max(insets.top, insets.bottom),
-            opacity: preset.opacity
-        )
-    }
-
-    private static func drawFilmPerforations(
-        in rect: CGRect,
-        railWidth: CGFloat,
-        verticalInset: CGFloat,
-        opacity: Float
-    ) {
-        let holeWidth = max(8, railWidth * 0.34)
-        let holeHeight = max(14, holeWidth * 1.65)
-        let step = holeHeight * 1.72
-        let leftX = rect.minX + (railWidth - holeWidth) / 2
-        let rightX = rect.maxX - railWidth + (railWidth - holeWidth) / 2
-        UIColor.white.withAlphaComponent(CGFloat(opacity) * 0.28).setFill()
-
-        var y = rect.minY + verticalInset + holeHeight * 0.45
-        while y + holeHeight < rect.maxY - verticalInset {
-            let leftRect = CGRect(x: leftX, y: y, width: holeWidth, height: holeHeight)
-            let rightRect = CGRect(x: rightX, y: y, width: holeWidth, height: holeHeight)
-            UIBezierPath(roundedRect: leftRect, cornerRadius: holeWidth * 0.22).fill()
-            UIBezierPath(roundedRect: rightRect, cornerRadius: holeWidth * 0.22).fill()
-            y += step
+    private static func markerColor(for preset: PhotoFramePreset) -> UIColor {
+        switch preset.backgroundColor {
+        case .black:
+            return UIColor.white.withAlphaComponent(CGFloat(preset.opacity) * 0.72)
+        case .white, .lightGray, .cream, .pink, .mint:
+            return UIColor.black.withAlphaComponent(CGFloat(preset.opacity) * 0.52)
         }
     }
 }

@@ -1125,64 +1125,55 @@ private struct LiveFrameOverlayView: View {
     var body: some View {
         GeometryReader { proxy in
             if preset.enabled {
-                let edgeInset: CGFloat = 1
-                let frameSize = CGSize(
-                    width: max(0, proxy.size.width - edgeInset * 2),
-                    height: max(0, proxy.size.height - edgeInset * 2)
-                )
+                let layout = PhotoFrameLayoutMetrics.make(in: proxy.size, preset: preset)
 
-                frameShape(size: frameSize)
-                    .frame(width: frameSize.width, height: frameSize.height)
-                    .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+                ZStack {
+                    if preset.shadowEnabled {
+                        RoundedRectangle(cornerRadius: layout.cornerRadius, style: .continuous)
+                            .stroke(.black.opacity(0.28), lineWidth: layout.shadowWidth)
+                            .frame(
+                                width: layout.contentRect.width,
+                                height: layout.contentRect.height
+                            )
+                            .position(
+                                x: layout.contentRect.midX,
+                                y: layout.contentRect.midY
+                            )
+                            .shadow(
+                                color: .black.opacity(0.34),
+                                radius: layout.shadowWidth * 2.5,
+                                x: 0,
+                                y: layout.shadowWidth
+                            )
+                    }
+
+                    PhotoFrameMaskShape(
+                        contentRect: layout.contentRect,
+                        cornerRadius: layout.cornerRadius
+                    )
+                    .fill(
+                        frameColor.opacity(Double(preset.opacity)),
+                        style: FillStyle(eoFill: true)
+                    )
+
+                    if preset.style == .minimal {
+                        ViewfinderCornerShape(
+                            contentRect: layout.contentRect,
+                            markerLength: layout.markerLength,
+                            markerOffset: layout.markerOffset
+                        )
+                        .stroke(
+                            markerColor,
+                            style: StrokeStyle(
+                                lineWidth: layout.markerLineWidth,
+                                lineCap: .square,
+                                lineJoin: .miter
+                            )
+                        )
+                    }
+                }
                     .allowsHitTesting(false)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func frameShape(size: CGSize) -> some View {
-        switch preset.style {
-        case .cleanWhite, .cleanBlack:
-            RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
-                .strokeBorder(frameColor.opacity(Double(preset.opacity)), lineWidth: frameLineWidth)
-                .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
-        case .instant:
-            ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
-                    .strokeBorder(frameColor.opacity(Double(preset.opacity)), lineWidth: frameLineWidth)
-                    .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
-
-                Rectangle()
-                    .fill(frameColor.opacity(Double(preset.opacity)))
-                    .frame(height: max(frameLineWidth * 3.1, size.height * 0.12))
-                    .overlay(alignment: .topLeading) {
-                        Capsule()
-                            .fill(.black.opacity(0.12))
-                            .frame(width: size.width * 0.34, height: 3)
-                            .padding(.top, 18)
-                            .padding(.leading, 24)
-                    }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .film:
-            HStack {
-                filmRail
-                Spacer()
-                filmRail
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
-                    .strokeBorder(frameColor.opacity(Double(preset.opacity) * 0.92), lineWidth: frameLineWidth)
-                    .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
-            }
-        case .minimal:
-            RoundedRectangle(cornerRadius: frameCornerRadius, style: .continuous)
-                .strokeBorder(
-                    frameColor.opacity(Double(preset.opacity)),
-                    lineWidth: max(3, frameLineWidth * 0.55)
-                )
-                .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowYOffset)
         }
     }
 
@@ -1190,36 +1181,79 @@ private struct LiveFrameOverlayView: View {
         preset.backgroundColor.color
     }
 
-    private var frameLineWidth: CGFloat {
-        CGFloat(preset.borderWidth)
-    }
-
-    private var frameCornerRadius: CGFloat {
-        CGFloat(preset.cornerRadius)
-    }
-
-    private var shadowColor: Color {
-        preset.shadowEnabled ? .black.opacity(0.34) : .clear
-    }
-
-    private var shadowRadius: CGFloat {
-        preset.shadowEnabled ? 8 : 0
-    }
-
-    private var shadowYOffset: CGFloat {
-        preset.shadowEnabled ? 3 : 0
-    }
-
-    private var filmRail: some View {
-        VStack(spacing: 10) {
-            ForEach(0..<8, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(.white.opacity(Double(preset.opacity) * 0.24))
-                    .frame(width: 8, height: 18)
-            }
+    private var markerColor: Color {
+        switch preset.backgroundColor {
+        case .black:
+            return .white.opacity(Double(preset.opacity) * 0.72)
+        case .white, .lightGray, .cream, .pink, .mint:
+            return .black.opacity(Double(preset.opacity) * 0.52)
         }
-        .frame(width: max(24, frameLineWidth * 1.65))
-        .background(frameColor.opacity(Double(preset.opacity) * 0.92))
+    }
+}
+
+private struct PhotoFrameMaskShape: Shape {
+    let contentRect: CGRect
+    let cornerRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
+        path.addPath(
+            Path(
+                UIBezierPath(
+                    roundedRect: contentRect,
+                    cornerRadius: cornerRadius
+                ).cgPath
+            )
+        )
+        return path
+    }
+}
+
+private struct ViewfinderCornerShape: Shape {
+    let contentRect: CGRect
+    let markerLength: CGFloat
+    let markerOffset: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(
+            to: CGPoint(
+                x: contentRect.minX - markerOffset,
+                y: contentRect.minY + markerLength - markerOffset
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: contentRect.minX - markerOffset,
+                y: contentRect.minY - markerOffset
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: contentRect.minX + markerLength - markerOffset,
+                y: contentRect.minY - markerOffset
+            )
+        )
+        path.move(
+            to: CGPoint(
+                x: contentRect.maxX - markerLength + markerOffset,
+                y: contentRect.maxY + markerOffset
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: contentRect.maxX + markerOffset,
+                y: contentRect.maxY + markerOffset
+            )
+        )
+        path.addLine(
+            to: CGPoint(
+                x: contentRect.maxX + markerOffset,
+                y: contentRect.maxY - markerLength + markerOffset
+            )
+        )
+        return path
     }
 }
 
@@ -1642,8 +1676,16 @@ private struct CameraSettingsView: View {
         switch preset.id {
         case BuiltInPresets.foodINS.id:
             return UIImage(named: "food-ins-cover")
+        case BuiltInPresets.coolWhiteSkin.id:
+            return UIImage(named: "cool-white-skin-cover")
+        case BuiltInPresets.fujiFresh.id:
+            return UIImage(named: "fuji-fresh-cover")
         case BuiltInPresets.cityTexture.id:
             return UIImage(named: "city-texture-cover")
+        case BuiltInPresets.japaneseCream.id:
+            return UIImage(named: "japanese-cream-cover")
+        case BuiltInPresets.nightMood.id:
+            return UIImage(named: "night-mood-cover")
         default:
             return nil
         }
@@ -1853,44 +1895,19 @@ private struct CameraSettingsView: View {
 
                 if photoFrame.enabled {
                     SettingsSectionTitle("相框样式")
-                PhotoFrameStylePicker(selection: frameStyleBinding)
+                    PhotoFrameStylePicker(selection: frameStyleBinding)
 
-                    SettingsDetailCard {
-                        SettingsSliderRow(
-                            title: "边框粗细",
-                            systemImage: "rectangle.inset.filled",
-                            value: frameBorderWidthBinding,
-                            range: 4...40,
-                            valueText: "\(Int(photoFrame.borderWidth.rounded()))"
-                        )
-
-                        Divider()
-
-                        SettingsSliderRow(
-                            title: "圆角半径",
-                            systemImage: "circle",
-                            value: frameCornerRadiusBinding,
-                            range: 0...30,
-                            valueText: "\(Int(photoFrame.cornerRadius.rounded()))"
-                        )
-
-                        Divider()
-
-                        SettingsCompactToggle(
-                            title: "阴影效果",
-                            systemImage: "hexagon",
-                            isOn: $photoFrame.shadowEnabled
-                        )
-
-                        Divider()
-
-                        PhotoFrameBackgroundColorPicker(selection: $photoFrame.backgroundColor)
-                    }
-
-                    SettingsSectionTitle("预览效果")
-                    PhotoFramePreviewView(previewStore: previewStore, preset: photoFrame)
+                    SettingsSectionTitle("预览与参数")
+                    PhotoFrameConfigurationView(
+                        previewStore: previewStore,
+                        preset: photoFrame,
+                        borderWidth: frameBorderWidthBinding,
+                        cornerRadius: frameCornerRadiusBinding,
+                        shadowEnabled: $photoFrame.shadowEnabled,
+                        backgroundColor: $photoFrame.backgroundColor
+                    )
                 } else {
-                    SettingsDisabledHint(text: "开启后可选择白边、黑边、拍立得、胶片或极简相框。")
+                    SettingsDisabledHint(text: "开启后可选择拍立得、经典留白、上下留白、底部留白或取景框。")
                 }
             }
             .padding(.horizontal, 16)
@@ -2046,27 +2063,27 @@ private struct CameraSettingsView: View {
                 case .cleanWhite:
                     updated.backgroundColor = .white
                     updated.borderWidth = 24
-                    updated.cornerRadius = 12
+                    updated.cornerRadius = 2
                     updated.shadowEnabled = true
                 case .cleanBlack:
-                    updated.backgroundColor = .black
+                    updated.backgroundColor = .white
                     updated.borderWidth = 24
-                    updated.cornerRadius = 12
+                    updated.cornerRadius = 2
                     updated.shadowEnabled = true
                 case .instant:
                     updated.backgroundColor = .white
-                    updated.borderWidth = 18
-                    updated.cornerRadius = 6
-                    updated.shadowEnabled = true
+                    updated.borderWidth = 24
+                    updated.cornerRadius = 0
+                    updated.shadowEnabled = false
                 case .film:
-                    updated.backgroundColor = .black
-                    updated.borderWidth = 16
-                    updated.cornerRadius = 4
+                    updated.backgroundColor = .white
+                    updated.borderWidth = 24
+                    updated.cornerRadius = 0
                     updated.shadowEnabled = false
                 case .minimal:
                     updated.backgroundColor = .white
-                    updated.borderWidth = 8
-                    updated.cornerRadius = 16
+                    updated.borderWidth = 24
+                    updated.cornerRadius = 0
                     updated.shadowEnabled = false
                 }
                 photoFrame = updated
@@ -2342,9 +2359,19 @@ private struct StyleManagementCard: View {
         .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(isCurrent ? StyleCameraTheme.primary : StyleCameraTheme.divider.opacity(0.75), lineWidth: isCurrent ? 2 : 1)
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(StyleCameraTheme.divider.opacity(0.75), lineWidth: 1)
+                    .opacity(isCurrent ? 0 : 1)
+
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(StyleCameraTheme.styleSelectionBorderGradient, lineWidth: 2)
+                    .shadow(color: StyleCameraTheme.primary.opacity(0.58), radius: 7)
+                    .shadow(color: StyleCameraTheme.accentBlue.opacity(0.32), radius: 11)
+                    .opacity(isCurrent ? 1 : 0)
+            }
         }
+        .animation(.easeOut(duration: 0.2), value: isCurrent)
     }
 
     @ViewBuilder
@@ -2804,13 +2831,12 @@ private struct PhotoFrameStylePicker: View {
                     Button {
                         selection = style
                     } label: {
-                        VStack(spacing: 7) {
+                        VStack(spacing: 5) {
                             PhotoFrameStyleThumbnail(style: style)
-                                .frame(width: 64, height: 82)
-                                .background(StyleCameraTheme.elevatedBackground)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .frame(width: 60, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
                                         .stroke(
                                             isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider,
                                             lineWidth: isSelected ? 2 : 1
@@ -2838,135 +2864,19 @@ private struct PhotoFrameStyleThumbnail: View {
     let style: PhotoFrameStyle
 
     var body: some View {
-        ZStack {
-            StyleCameraTheme.elevatedBackground
-
-            frameColor
-                .frame(width: frameWidth, height: frameHeight)
-                .clipShape(RoundedRectangle(cornerRadius: style == .minimal ? 8 : 4, style: .continuous))
-                .shadow(color: .black.opacity(style == .film ? 0 : 0.16), radius: 3, x: 0, y: 2)
-
-            LinearGradient(
-                colors: [Color(red: 0.72, green: 0.86, blue: 0.97), Color(red: 0.24, green: 0.67, blue: 0.88)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(width: imageWidth, height: imageHeight)
-            .clipShape(RoundedRectangle(cornerRadius: style == .minimal ? 5 : 2, style: .continuous))
-
-            if style == .film {
-                HStack {
-                    filmRail
-                    Spacer()
-                    filmRail
+        if let image = UIImage(named: style.sampleImageName) {
+            Image(uiImage: image)
+                .resizable()
+                .interpolation(.high)
+                .aspectRatio(3 / 4, contentMode: .fit)
+        } else {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(StyleCameraTheme.elevatedBackground)
+                .overlay {
+                    Image(systemName: "photo")
+                        .foregroundStyle(.secondary)
                 }
-                .frame(width: frameWidth, height: frameHeight)
-            }
-
-            if style == .instant {
-                Circle()
-                    .fill(.black.opacity(0.12))
-                    .frame(width: 3, height: 3)
-                    .offset(y: 29)
-            }
         }
-    }
-
-    private var frameColor: Color {
-        switch style {
-        case .cleanBlack, .film: return .black
-        case .cleanWhite, .instant, .minimal: return .white
-        }
-    }
-
-    private var frameWidth: CGFloat {
-        style == .film ? 52 : 48
-    }
-
-    private var frameHeight: CGFloat {
-        style == .instant ? 66 : 62
-    }
-
-    private var imageWidth: CGFloat {
-        switch style {
-        case .film: return 34
-        case .minimal: return 42
-        case .cleanWhite, .cleanBlack, .instant: return 38
-        }
-    }
-
-    private var imageHeight: CGFloat {
-        style == .instant ? 43 : 48
-    }
-
-    private var filmRail: some View {
-        VStack(spacing: 3) {
-            ForEach(0..<5, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(.white.opacity(0.42))
-                    .frame(width: 3, height: 5)
-            }
-        }
-        .frame(width: 8)
-    }
-}
-
-private struct FrameValueSlider: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .frame(width: 76, alignment: .leading)
-
-            Slider(value: $value, in: range)
-                .tint(StyleCameraTheme.primary)
-
-            Text("\(Int(value.rounded()))")
-                .font(.system(.subheadline, design: .rounded))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .frame(width: 30, alignment: .trailing)
-        }
-    }
-}
-
-private struct PhotoFrameBackgroundColorPicker: View {
-    @Binding var selection: PhotoFrameBackgroundColor
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("背景颜色")
-
-            HStack(spacing: 12) {
-                ForEach(PhotoFrameBackgroundColor.allCases, id: \.self) { color in
-                    let isSelected = color == selection
-
-                    Button {
-                        selection = color
-                    } label: {
-                        Circle()
-                            .fill(color.color)
-                            .frame(width: 30, height: 30)
-                            .overlay {
-                                Circle()
-                                    .stroke(Color.secondary.opacity(0.22), lineWidth: 1)
-                            }
-                            .padding(3)
-                            .overlay {
-                                Circle()
-                                    .stroke(isSelected ? StyleCameraTheme.primary : Color.clear, lineWidth: 2)
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(color.title)
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
 }
 
@@ -3220,6 +3130,99 @@ private struct WatermarkPreviewView: View {
     }
 }
 
+private struct PhotoFrameConfigurationView: View {
+    @ObservedObject var previewStore: CameraPreviewStore
+    let preset: PhotoFramePreset
+    @Binding var borderWidth: Double
+    @Binding var cornerRadius: Double
+    @Binding var shadowEnabled: Bool
+    @Binding var backgroundColor: PhotoFrameBackgroundColor
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            PhotoFramePreviewView(previewStore: previewStore, preset: preset)
+                .frame(width: 104)
+
+            VStack(alignment: .leading, spacing: 8) {
+                CompactFrameSlider(
+                    title: "边框",
+                    value: $borderWidth,
+                    range: 4...40
+                )
+
+                CompactFrameSlider(
+                    title: "圆角",
+                    value: $cornerRadius,
+                    range: 0...30
+                )
+
+                Toggle(isOn: $shadowEnabled) {
+                    Text("阴影")
+                        .font(.caption)
+                }
+                .tint(StyleCameraTheme.primary)
+
+                HStack(spacing: 6) {
+                    Text("颜色")
+                        .font(.caption)
+                        .frame(width: 30, alignment: .leading)
+
+                    ForEach(PhotoFrameBackgroundColor.allCases, id: \.self) { color in
+                        Button {
+                            backgroundColor = color
+                        } label: {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 24, height: 24)
+                                .overlay {
+                                    Circle()
+                                        .stroke(
+                                            backgroundColor == color
+                                                ? StyleCameraTheme.primary
+                                                : StyleCameraTheme.divider,
+                                            lineWidth: backgroundColor == color ? 2 : 1
+                                        )
+                                }
+                                .padding(2)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("选择\(color.title)")
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(12)
+        .background(StyleCameraTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(StyleCameraTheme.divider, lineWidth: 1)
+        }
+    }
+}
+
+private struct CompactFrameSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .frame(width: 30, alignment: .leading)
+
+            Slider(value: $value, in: range)
+                .tint(StyleCameraTheme.primary)
+
+            Text("\(Int(value.rounded()))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 24, alignment: .trailing)
+        }
+    }
+}
+
 private struct PhotoFramePreviewView: View {
     @ObservedObject var previewStore: CameraPreviewStore
     let preset: PhotoFramePreset
@@ -3230,11 +3233,13 @@ private struct PhotoFramePreviewView: View {
 
             LiveFrameOverlayView(preset: preset)
         }
-        .frame(height: 230)
+        .aspectRatio(3 / 4, contentMode: .fit)
         .background(frameBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .padding(14)
-        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(StyleCameraTheme.divider, lineWidth: 1)
+        }
     }
 
     @ViewBuilder
@@ -3242,8 +3247,9 @@ private struct PhotoFramePreviewView: View {
         if let image = previewStore.image {
             Image(uiImage: image)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
         } else {
             LinearGradient(
                 colors: [
@@ -3490,21 +3496,31 @@ private extension WatermarkPosition {
 private extension PhotoFrameStyle {
     var title: String {
         switch self {
-        case .cleanWhite: return "简约白边"
-        case .cleanBlack: return "简约黑边"
-        case .instant: return "拍立得"
-        case .film: return "胶片边"
-        case .minimal: return "极简"
+        case .cleanWhite: return "拍立得留白"
+        case .cleanBlack: return "经典白边"
+        case .instant: return "上下留白"
+        case .film: return "底部留白"
+        case .minimal: return "取景框"
         }
     }
 
     var shortTitle: String {
         switch self {
-        case .cleanWhite: return "白边"
-        case .cleanBlack: return "黑边"
-        case .instant: return "拍立得"
-        case .film: return "胶片"
-        case .minimal: return "极简"
+        case .cleanWhite: return "拍立得"
+        case .cleanBlack: return "经典"
+        case .instant: return "上下"
+        case .film: return "底部"
+        case .minimal: return "取景框"
+        }
+    }
+
+    var sampleImageName: String {
+        switch self {
+        case .cleanWhite: return "frame-style-1"
+        case .cleanBlack: return "frame-style-2"
+        case .instant: return "frame-style-3"
+        case .film: return "frame-style-4"
+        case .minimal: return "frame-style-5"
         }
     }
 }
@@ -3523,12 +3539,32 @@ private extension PhotoFrameBackgroundColor {
 
     var color: Color {
         switch self {
-        case .white: return Color(white: 0.98)
-        case .lightGray: return Color(red: 0.88, green: 0.89, blue: 0.91)
+        case .white: return Color(
+            red: 254 / 255,
+            green: 254 / 255,
+            blue: 254 / 255
+        )
+        case .lightGray: return Color(
+            red: 249 / 255,
+            green: 244 / 255,
+            blue: 237 / 255
+        )
         case .black: return Color(white: 0.03)
-        case .cream: return Color(red: 0.96, green: 0.84, blue: 0.67)
-        case .pink: return Color(red: 0.96, green: 0.84, blue: 0.90)
-        case .mint: return Color(red: 0.78, green: 0.94, blue: 0.86)
+        case .cream: return Color(
+            red: 254 / 255,
+            green: 236 / 255,
+            blue: 222 / 255
+        )
+        case .pink: return Color(
+            red: 253 / 255,
+            green: 204 / 255,
+            blue: 203 / 255
+        )
+        case .mint: return Color(
+            red: 162 / 255,
+            green: 213 / 255,
+            blue: 192 / 255
+        )
         }
     }
 }
