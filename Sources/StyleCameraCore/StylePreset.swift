@@ -31,6 +31,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var opacity: Float
     public var imageData: Data?
     public var imageScale: Float
+    public var watermarkScale: Float
     public var template: WatermarkTemplate
     public var includeDate: Bool
     public var includeDevice: Bool
@@ -50,6 +51,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         opacity: Float = 0.65,
         imageData: Data? = nil,
         imageScale: Float = 0.22,
+        watermarkScale: Float = 1,
         template: WatermarkTemplate = .signature,
         includeDate: Bool = true,
         includeDevice: Bool = false,
@@ -68,6 +70,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         self.opacity = min(1, max(0, opacity))
         self.imageData = imageData
         self.imageScale = min(0.6, max(0.08, imageScale))
+        self.watermarkScale = min(2, max(0.5, watermarkScale))
         self.template = template
         self.includeDate = includeDate
         self.includeDevice = includeDevice
@@ -91,6 +94,8 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         imageData = try container.decodeIfPresent(Data.self, forKey: .imageData)
         let decodedImageScale = try container.decodeIfPresent(Float.self, forKey: .imageScale) ?? 0.22
         imageScale = min(0.6, max(0.08, decodedImageScale))
+        let decodedWatermarkScale = try container.decodeIfPresent(Float.self, forKey: .watermarkScale) ?? 1
+        watermarkScale = min(2, max(0.5, decodedWatermarkScale))
         template = try container.decodeIfPresent(WatermarkTemplate.self, forKey: .template) ?? .signature
         includeDate = try container.decodeIfPresent(Bool.self, forKey: .includeDate) ?? true
         includeDevice = try container.decodeIfPresent(Bool.self, forKey: .includeDevice) ?? false
@@ -112,6 +117,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(opacity, forKey: .opacity)
         try container.encodeIfPresent(imageData, forKey: .imageData)
         try container.encode(imageScale, forKey: .imageScale)
+        try container.encode(watermarkScale, forKey: .watermarkScale)
         try container.encode(template, forKey: .template)
         try container.encode(includeDate, forKey: .includeDate)
         try container.encode(includeDevice, forKey: .includeDevice)
@@ -132,6 +138,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         case opacity
         case imageData
         case imageScale
+        case watermarkScale
         case template
         case includeDate
         case includeDevice
@@ -214,7 +221,7 @@ public enum WatermarkMode: String, Codable, CaseIterable, Sendable {
     case image
 }
 
-public enum WatermarkTemplate: String, Codable, CaseIterable, Sendable {
+public enum WatermarkTemplate: String, Codable, CaseIterable, Hashable, Sendable {
     case signature
     case travelCard
     case dateStamp

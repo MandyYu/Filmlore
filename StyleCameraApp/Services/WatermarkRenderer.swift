@@ -52,7 +52,12 @@ final class WatermarkRenderer {
             UIColor.clear.setFill()
             context.fill(CGRect(origin: .zero, size: size))
 
-            let fontSize = max(18, min(size.width, size.height) * 0.026)
+            let fontSize = max(
+                9,
+                min(size.width, size.height)
+                    * 0.026
+                    * CGFloat(preset.watermarkScale)
+            )
             let attributed = Self.attributedText(
                 fullText,
                 preset: preset,
@@ -324,7 +329,12 @@ final class WatermarkRenderer {
         canvasSize: CGSize,
         preset: WatermarkPreset
     ) -> CGSize {
-        let maxSide = max(48, min(canvasSize.width, canvasSize.height) * CGFloat(preset.imageScale))
+        let maxSide = max(
+            24,
+            min(canvasSize.width, canvasSize.height)
+                * CGFloat(preset.imageScale)
+                * CGFloat(preset.watermarkScale)
+        )
         let originalMaxSide = max(originalSize.width, originalSize.height)
         guard originalMaxSide > 0 else {
             return CGSize(width: maxSide, height: maxSide)

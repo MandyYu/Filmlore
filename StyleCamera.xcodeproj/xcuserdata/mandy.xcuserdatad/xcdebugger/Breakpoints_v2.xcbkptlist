@@ -7,16 +7,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "9C7F5380-1C93-4EE1-B78E-3514484591BC"
-            shouldBeEnabled = "Yes"
+            uuid = "86BD791A-B516-4EE5-9259-F9C312974A09"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "StyleCameraApp/Views/CameraView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "3061"
-            endingLineNumber = "3061"
-            landmarkName = "previewFont"
+            startingLineNumber = "3058"
+            endingLineNumber = "3058"
+            landmarkName = "columns"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>

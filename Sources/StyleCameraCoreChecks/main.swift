@@ -132,6 +132,7 @@ expect(watermarkDefaults.locationOverrideText == "", "default watermark location
 expect(watermarkDefaults.customPosition == nil, "default watermark custom position")
 expect(watermarkDefaults.imageData == nil, "default watermark image data")
 expect(watermarkDefaults.imageScale == 0.22, "default watermark image scale")
+expect(watermarkDefaults.watermarkScale == 1, "default watermark content scale")
 expect(watermarkDefaults.template == .signature, "default watermark template")
 expect(watermarkDefaults.textColor == .automatic, "default watermark text color")
 expect(watermarkDefaults.visualStyle == .minimal, "default watermark visual style")
@@ -139,8 +140,11 @@ expect(watermarkDefaults.effect == .shadow, "default watermark effect")
 expect(WatermarkAnchor(x: -1, y: 2) == WatermarkAnchor(x: 0, y: 1), "watermark anchor clamp")
 expect(WatermarkPreset(imageScale: 2).imageScale == 0.6, "watermark image scale upper clamp")
 expect(WatermarkPreset(imageScale: -1).imageScale == 0.08, "watermark image scale lower clamp")
+expect(WatermarkPreset(watermarkScale: 3).watermarkScale == 2, "watermark content scale upper clamp")
+expect(WatermarkPreset(watermarkScale: 0).watermarkScale == 0.5, "watermark content scale lower clamp")
 let legacyWatermark = try? JSONDecoder().decode(WatermarkPreset.self, from: Data("{}".utf8))
 expect(legacyWatermark?.template == .signature, "legacy watermark template fallback")
+expect(legacyWatermark?.watermarkScale == 1, "legacy watermark content scale fallback")
 let travelWatermarkText = WatermarkPreset(
     text: "My Trip",
     template: .travelCard,
