@@ -77,6 +77,12 @@ let updatedCustomPreset = StylePreset(
 model.replacePreset(id: updatedCustomPreset.id, with: updatedCustomPreset)
 expect(model.selectedPreset.name == "我的风格 3", "replace style by id")
 expect(model.selectedPreset.params.exposure == 28, "replace style by id params")
+let removedCustomPreset = model.removePreset(id: updatedCustomPreset.id)
+expect(removedCustomPreset?.name == "我的风格 3", "remove style by id")
+expect(model.presets.count == BuiltInPresets.all.count, "remove style updates preset list")
+expect(model.presets.contains(where: { $0.id == updatedCustomPreset.id }) == false, "removed style is absent")
+let singlePresetModel = StyleSelectionModel(presets: [BuiltInPresets.original])
+expect(singlePresetModel.removePreset(id: BuiltInPresets.original.id) == nil, "selection keeps at least one style")
 
 let input = CIImage(color: CIColor(red: 0.4, green: 0.5, blue: 0.6))
     .cropped(to: CGRect(x: 0, y: 0, width: 12, height: 18))
@@ -135,6 +141,7 @@ expect(watermarkDefaults.imageScale == 0.22, "default watermark image scale")
 expect(watermarkDefaults.watermarkScale == 1, "default watermark content scale")
 expect(watermarkDefaults.template == .signature, "default watermark template")
 expect(watermarkDefaults.textColor == .automatic, "default watermark text color")
+expect(watermarkDefaults.font == .sourceHanSans, "default watermark font")
 expect(watermarkDefaults.visualStyle == .minimal, "default watermark visual style")
 expect(watermarkDefaults.effect == .shadow, "default watermark effect")
 expect(WatermarkAnchor(x: -1, y: 2) == WatermarkAnchor(x: 0, y: 1), "watermark anchor clamp")
@@ -145,6 +152,7 @@ expect(WatermarkPreset(watermarkScale: 0).watermarkScale == 0.5, "watermark cont
 let legacyWatermark = try? JSONDecoder().decode(WatermarkPreset.self, from: Data("{}".utf8))
 expect(legacyWatermark?.template == .signature, "legacy watermark template fallback")
 expect(legacyWatermark?.watermarkScale == 1, "legacy watermark content scale fallback")
+expect(legacyWatermark?.font == .sourceHanSans, "legacy watermark font fallback")
 let travelWatermarkText = WatermarkPreset(
     text: "My Trip",
     template: .travelCard,

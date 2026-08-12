@@ -286,7 +286,7 @@ final class CameraViewModel: ObservableObject {
         guidanceSettings = Self.loadGuidanceSettings()
         captureAspectRatio = Self.loadCaptureAspectRatio()
         selection = StyleSelectionModel(
-            presets: BuiltInPresets.all + Self.loadCustomStylePresets(),
+            presets: Self.loadConfiguredBuiltInPresets() + Self.loadCustomStylePresets(),
             selectedIndex: 1
         )
         disabledStyleIDs = Self.loadDisabledStyleIDs().intersection(selection.presets.map(\.id))
@@ -495,8 +495,7 @@ final class CameraViewModel: ObservableObject {
         name: String,
         params: StyleParams
     ) -> StylePreset? {
-        guard let existingPreset = selection.presets.first(where: { $0.id == id }),
-              !existingPreset.isBuiltIn else {
+        guard let existingPreset = selection.presets.first(where: { $0.id == id }) else {
             return nil
         }
 
@@ -506,15 +505,43 @@ final class CameraViewModel: ObservableObject {
             name: trimmedName.isEmpty ? existingPreset.name : trimmedName,
             params: params,
             watermark: existingPreset.watermark,
-            isBuiltIn: false
+            isBuiltIn: existingPreset.isBuiltIn
         )
         selection.replacePreset(id: id, with: updatedPreset)
         if selection.selectedPreset.id == id {
             selectedStyleName = updatedPreset.name
         }
-        Self.saveCustomStylePresets(selection.presets.filter { !$0.isBuiltIn })
+        if updatedPreset.isBuiltIn {
+            Self.saveBuiltInStyleOverrides(selection.presets.filter { $0.isBuiltIn })
+        } else {
+            Self.saveCustomStylePresets(selection.presets.filter { !$0.isBuiltIn })
+        }
         refreshStylePreviewImages()
         return updatedPreset
+    }
+
+    @discardableResult
+    func deleteCustomStyle(id: StylePreset.ID) -> Bool {
+        guard let preset = selection.presets.first(where: { $0.id == id }),
+              !preset.isBuiltIn,
+              selection.removePreset(id: id) != nil else {
+            return false
+        }
+
+        disabledStyleIDs.remove(id)
+        if visibleStylePresets.isEmpty {
+            disabledStyleIDs.remove(BuiltInPresets.original.id)
+        }
+        if disabledStyleIDs.contains(selection.selectedPreset.id),
+           let replacement = visibleStylePresets.first {
+            selection.selectPreset(id: replacement.id)
+        }
+
+        selectedStyleName = selection.selectedPreset.name
+        Self.saveCustomStylePresets(selection.presets.filter { !$0.isBuiltIn })
+        Self.saveDisabledStyleIDs(disabledStyleIDs)
+        refreshStylePreviewImages()
+        return true
     }
 
     @discardableResult
@@ -770,6 +797,7 @@ final class CameraViewModel: ObservableObject {
     private static let watermarkSettingsKey = "stylecamera.watermark.settings"
     private static let photoFrameSettingsKey = "stylecamera.photo.frame.settings"
     private static let customStyleSettingsKey = "stylecamera.custom.styles"
+    private static let builtInStyleOverridesKey = "stylecamera.builtin.style.overrides"
     private static let disabledStyleSettingsKey = "stylecamera.disabled.styles"
     private static let guidanceSettingsKey = "stylecamera.photo.guidance.settings"
     private static let captureAspectRatioSettingsKey = "stylecamera.capture.aspectRatio"
@@ -850,6 +878,25 @@ final class CameraViewModel: ObservableObject {
             copy.isBuiltIn = false
             return copy
         }
+    }
+
+    private static func loadConfiguredBuiltInPresets() -> [StylePreset] {
+        guard let data = UserDefaults.standard.data(forKey: builtInStyleOverridesKey),
+              let overrides = try? JSONDecoder().decode([StylePreset].self, from: data) else {
+            return BuiltInPresets.all
+        }
+
+        let overridesByID = Dictionary(uniqueKeysWithValues: overrides.map { ($0.id, $0) })
+        return BuiltInPresets.all.map { preset in
+            guard var override = overridesByID[preset.id] else { return preset }
+            override.isBuiltIn = true
+            return override
+        }
+    }
+
+    private static func saveBuiltInStyleOverrides(_ presets: [StylePreset]) {
+        guard let data = try? JSONEncoder().encode(presets) else { return }
+        UserDefaults.standard.set(data, forKey: builtInStyleOverridesKey)
     }
 
     private static func saveCustomStylePresets(_ presets: [StylePreset]) {

@@ -39,6 +39,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var includeLocation: Bool
     public var locationOverrideText: String
     public var textColor: WatermarkTextColor
+    public var font: WatermarkFont
     public var visualStyle: WatermarkVisualStyle
     public var effect: WatermarkEffect
 
@@ -59,6 +60,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         includeLocation: Bool = false,
         locationOverrideText: String = "",
         textColor: WatermarkTextColor = .automatic,
+        font: WatermarkFont = .sourceHanSans,
         visualStyle: WatermarkVisualStyle = .minimal,
         effect: WatermarkEffect = .shadow
     ) {
@@ -78,6 +80,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         self.includeLocation = includeLocation
         self.locationOverrideText = locationOverrideText
         self.textColor = textColor
+        self.font = font
         self.visualStyle = visualStyle
         self.effect = effect
     }
@@ -103,6 +106,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         includeLocation = try container.decodeIfPresent(Bool.self, forKey: .includeLocation) ?? false
         locationOverrideText = try container.decodeIfPresent(String.self, forKey: .locationOverrideText) ?? ""
         textColor = try container.decodeIfPresent(WatermarkTextColor.self, forKey: .textColor) ?? .automatic
+        font = try container.decodeIfPresent(WatermarkFont.self, forKey: .font) ?? .sourceHanSans
         visualStyle = try container.decodeIfPresent(WatermarkVisualStyle.self, forKey: .visualStyle) ?? .minimal
         effect = try container.decodeIfPresent(WatermarkEffect.self, forKey: .effect) ?? .shadow
     }
@@ -125,6 +129,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(includeLocation, forKey: .includeLocation)
         try container.encode(locationOverrideText, forKey: .locationOverrideText)
         try container.encode(textColor, forKey: .textColor)
+        try container.encode(font, forKey: .font)
         try container.encode(visualStyle, forKey: .visualStyle)
         try container.encode(effect, forKey: .effect)
     }
@@ -146,6 +151,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         case includeLocation
         case locationOverrideText
         case textColor
+        case font
         case visualStyle
         case effect
     }
@@ -265,6 +271,79 @@ public enum WatermarkTextColor: String, Codable, CaseIterable, Sendable {
     case orange
     case blue
     case pink
+}
+
+public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
+    case sourceHanSans
+    case sourceHanSerif
+    case lxgwWenKai
+    case smileySans
+    case maShanZheng
+    case longCang
+    case zcoolXiaoWei
+    case zcoolKuaiLe
+    case caveat
+    case bebasNeue
+
+    public var displayName: String {
+        switch self {
+        case .sourceHanSans: return "思源黑体 Source Han Sans SC"
+        case .sourceHanSerif: return "思源宋体 Source Han Serif SC"
+        case .lxgwWenKai: return "霞鹜文楷 LXGW WenKai"
+        case .smileySans: return "得意黑 Smiley Sans"
+        case .maShanZheng: return "马善政毛笔楷书 Ma Shan Zheng"
+        case .longCang: return "龙藏体 Long Cang"
+        case .zcoolXiaoWei: return "站酷小薇体 ZCOOL XiaoWei"
+        case .zcoolKuaiLe: return "站酷快乐体 ZCOOL KuaiLe"
+        case .caveat: return "Caveat"
+        case .bebasNeue: return "Bebas Neue"
+        }
+    }
+
+    public var title: String {
+        switch self {
+        case .sourceHanSans: return "思源黑体"
+        case .sourceHanSerif: return "思源宋体"
+        case .lxgwWenKai: return "霞鹜文楷"
+        case .smileySans: return "得意黑"
+        case .maShanZheng: return "马善政毛笔楷书"
+        case .longCang: return "龙藏体"
+        case .zcoolXiaoWei: return "站酷小薇体"
+        case .zcoolKuaiLe: return "站酷快乐体"
+        case .caveat: return "Caveat"
+        case .bebasNeue: return "Bebas Neue"
+        }
+    }
+
+    public var englishName: String {
+        switch self {
+        case .sourceHanSans: return "Source Han Sans SC"
+        case .sourceHanSerif: return "Source Han Serif SC"
+        case .lxgwWenKai: return "LXGW WenKai"
+        case .smileySans: return "Smiley Sans"
+        case .maShanZheng: return "Ma Shan Zheng"
+        case .longCang: return "Long Cang"
+        case .zcoolXiaoWei: return "ZCOOL XiaoWei"
+        case .zcoolKuaiLe: return "ZCOOL KuaiLe"
+        case .caveat: return "Caveat"
+        case .bebasNeue: return "Bebas Neue"
+        }
+    }
+
+    public var styleTag: String {
+        switch self {
+        case .sourceHanSans: return "现代正式"
+        case .sourceHanSerif: return "优雅正式"
+        case .lxgwWenKai: return "随性手写"
+        case .smileySans: return "粗体潮流"
+        case .maShanZheng: return "书法张力"
+        case .longCang: return "狂放手写"
+        case .zcoolXiaoWei: return "纤细文艺"
+        case .zcoolKuaiLe: return "活泼可爱"
+        case .caveat: return "英文随写"
+        case .bebasNeue: return "窄体硬朗"
+        }
+    }
 }
 
 public enum WatermarkEffect: String, Codable, CaseIterable, Sendable {

@@ -14,9 +14,9 @@
             filePath = "StyleCameraApp/Views/CameraView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "3058"
-            endingLineNumber = "3058"
-            landmarkName = "columns"
+            startingLineNumber = "3070"
+            endingLineNumber = "3070"
+            landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>

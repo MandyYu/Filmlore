@@ -23,6 +23,16 @@ open StyleCamera.xcodeproj
 
 Select the `StyleCamera` scheme and run on a physical iPhone. Camera preview and saving require a real device.
 
+## StyleCamera Pro
+
+The app uses StoreKit 2 with one non-consumable product:
+
+```text
+com.mandy.stylecamera.pro.lifetime
+```
+
+Before distributing the app, create a non-consumable In-App Purchase with that product ID in App Store Connect, complete its localization and price, and submit it with the app version. Debug builds also expose a local Pro entitlement switch on the upgrade page so the locked UI can be tested before the App Store product is ready.
+
 ## Verification Notes
 
 This machine currently has only Command Line Tools selected and no `/Applications/Xcode.app`:

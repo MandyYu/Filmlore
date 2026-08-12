@@ -43,6 +43,8 @@
 		100000000000000000000022 /* frame-style-3@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* frame-style-3@2x.png */; };
 		100000000000000000000023 /* frame-style-4@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000024 /* frame-style-4@2x.png */; };
 		100000000000000000000024 /* frame-style-5@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000025 /* frame-style-5@2x.png */; };
+		100000000000000000000025 /* ProAccessManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000026 /* ProAccessManager.swift */; };
+		100000000000000000000026 /* ProUpgradeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000027 /* ProUpgradeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +109,8 @@
 		200000000000000000000023 /* frame-style-3@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-3@2x.png"; sourceTree = "<group>"; };
 		200000000000000000000024 /* frame-style-4@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-4@2x.png"; sourceTree = "<group>"; };
 		200000000000000000000025 /* frame-style-5@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "StyleCameraApp/Resources/FrameSamples/frame-style-5@2x.png"; sourceTree = "<group>"; };
+		200000000000000000000026 /* ProAccessManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Services/ProAccessManager.swift; sourceTree = "<group>"; };
+		200000000000000000000027 /* ProUpgradeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleCameraApp/Views/ProUpgradeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +172,8 @@
 				20000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift */,
 				200000000000000000000015 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift */,
 				200000000000000000000016 /* StyleCameraApp/Services/MotionLevelService.swift */,
+				200000000000000000000026 /* ProAccessManager.swift */,
+				200000000000000000000027 /* ProUpgradeView.swift */,
 				200000000000000000000018 /* city-texture-cover.png */,
 				200000000000000000000019 /* food-ins-cover.png */,
 				20000000000000000000001C /* cool-white-skin-cover.png */,
@@ -312,6 +318,8 @@
 				10000000000000000000000F /* StyleCameraApp/Services/WatermarkRenderer.swift in Sources */,
 				100000000000000000000014 /* StyleCameraApp/Services/CompositionGuideAnalyzer.swift in Sources */,
 				100000000000000000000015 /* StyleCameraApp/Services/MotionLevelService.swift in Sources */,
+				100000000000000000000025 /* ProAccessManager.swift in Sources */,
+				100000000000000000000026 /* ProUpgradeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

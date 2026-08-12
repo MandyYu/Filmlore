@@ -45,6 +45,22 @@ public final class StyleSelectionModel {
         selectedIndex = presets.count - 1
     }
 
+    @discardableResult
+    public func removePreset(id: StylePreset.ID) -> StylePreset? {
+        guard presets.count > 1,
+              let index = presets.firstIndex(where: { $0.id == id }) else {
+            return nil
+        }
+
+        let removedPreset = presets.remove(at: index)
+        if index < selectedIndex {
+            selectedIndex -= 1
+        } else if index == selectedIndex {
+            selectedIndex = min(index, presets.count - 1)
+        }
+        return removedPreset
+    }
+
     public func relativeOffset(for preset: StylePreset) -> Int? {
         guard let index = presets.firstIndex(where: { $0.id == preset.id }) else {
             return nil

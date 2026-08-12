@@ -1,5 +1,6 @@
 import CoreImage
 import StyleCameraCore
+import SwiftUI
 import UIKit
 
 final class WatermarkRenderer {
@@ -194,16 +195,16 @@ final class WatermarkRenderer {
 
         switch preset.visualStyle {
         case .minimal:
-            font = .systemFont(ofSize: fontSize, weight: .medium)
+            font = preset.font.uiFont(size: fontSize, weight: .medium)
             color = Self.textColor(for: preset, fallback: .white, alphaMultiplier: 0.78)
         case .darkBadge:
-            font = .systemFont(ofSize: fontSize, weight: .semibold)
+            font = preset.font.uiFont(size: fontSize, weight: .semibold)
             color = Self.textColor(for: preset, fallback: .white, alphaMultiplier: 0.92)
         case .lightBadge:
-            font = .systemFont(ofSize: fontSize, weight: .semibold)
+            font = preset.font.uiFont(size: fontSize, weight: .semibold)
             color = Self.textColor(for: preset, fallback: .black, alphaMultiplier: 0.72)
         case .film:
-            font = .monospacedSystemFont(ofSize: fontSize * 0.92, weight: .medium)
+            font = preset.font.uiFont(size: fontSize * 0.92, weight: .medium)
             color = Self.textColor(
                 for: preset,
                 fallback: UIColor(red: 1.0, green: 0.88, blue: 0.36, alpha: 1),
@@ -241,7 +242,8 @@ final class WatermarkRenderer {
             attributes[.font] = templateFont(
                 for: preset.template,
                 lineIndex: index,
-                fontSize: fontSize
+                fontSize: fontSize,
+                watermarkFont: preset.font
             )
 
             let suffix = index == lines.indices.last ? "" : "\n"
@@ -254,26 +256,27 @@ final class WatermarkRenderer {
     private static func templateFont(
         for template: WatermarkTemplate,
         lineIndex: Int,
-        fontSize: CGFloat
+        fontSize: CGFloat,
+        watermarkFont: WatermarkFont
     ) -> UIFont {
         switch template {
         case .centeredTravel:
             return lineIndex == 0
-                ? .systemFont(ofSize: fontSize * 1.16, weight: .semibold)
-                : .systemFont(ofSize: fontSize * 0.86, weight: .regular)
+                ? watermarkFont.uiFont(size: fontSize * 1.16, weight: .semibold)
+                : watermarkFont.uiFont(size: fontSize * 0.86, weight: .regular)
         case .weekdayQuote:
             switch lineIndex {
             case 0:
-                return .systemFont(ofSize: fontSize * 1.42, weight: .medium)
+                return watermarkFont.uiFont(size: fontSize * 1.42, weight: .medium)
             case 1:
-                return .systemFont(ofSize: fontSize * 0.9, weight: .bold)
+                return watermarkFont.uiFont(size: fontSize * 0.9, weight: .bold)
             case 2, 4:
-                return .monospacedSystemFont(ofSize: fontSize * 0.68, weight: .regular)
+                return watermarkFont.uiFont(size: fontSize * 0.68, weight: .regular)
             default:
-                return .systemFont(ofSize: fontSize, weight: .regular)
+                return watermarkFont.uiFont(size: fontSize, weight: .regular)
             }
         default:
-            return .systemFont(ofSize: fontSize)
+            return watermarkFont.uiFont(size: fontSize)
         }
     }
 
@@ -644,6 +647,118 @@ final class PhotoFrameRenderer {
             return UIColor.white.withAlphaComponent(CGFloat(preset.opacity) * 0.72)
         case .white, .lightGray, .cream, .pink, .mint:
             return UIColor.black.withAlphaComponent(CGFloat(preset.opacity) * 0.52)
+        }
+    }
+}
+
+public extension WatermarkFont {
+    func uiFont(size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+        let candidates: [String]
+        switch self {
+        case .sourceHanSans:
+            candidates = ["SourceHanSansSC-Medium", "SourceHanSansCN-Medium", "PingFangSC-Medium"]
+        case .sourceHanSerif:
+            candidates = ["SourceHanSerifSC-Regular", "SourceHanSerifCN-Regular", "Songti SC", "Georgia"]
+        case .lxgwWenKai:
+            candidates = ["LXGWWenKai-Regular", "LXGWWenKaiMono-Regular", "Kaiti SC", "STKaiti"]
+        case .smileySans:
+            candidates = ["SmileySans-Oblique", "AvenirNext-Heavy", "Impact"]
+        case .maShanZheng:
+            candidates = ["MaShanZheng-Regular", "Xingkai SC", "STXingkai"]
+        case .longCang:
+            candidates = ["LongCang-Regular", "Chalkduster", "BradleyHandITCTT-Bold"]
+        case .zcoolXiaoWei:
+            candidates = ["ZCOOLXiaoWei-Regular", "STHeitiSC-Light", "PingFangSC-Thin"]
+        case .zcoolKuaiLe:
+            candidates = ["ZCOOLKuaiLe-Regular", "Yuanti SC", "ArialRoundedMTBold"]
+        case .caveat:
+            candidates = ["Caveat", "Caveat-Regular", "SnellRoundhand", "Bradley Hand"]
+        case .bebasNeue:
+            candidates = ["BebasNeue", "BebasNeue-Regular", "DIN Condensed Bold", "Impact"]
+        }
+
+        for name in candidates {
+            if let font = UIFont(name: name, size: size) {
+                return font
+            }
+        }
+
+        switch self {
+        case .sourceHanSans:
+            return .systemFont(ofSize: size, weight: weight)
+        case .sourceHanSerif:
+            return .systemFont(ofSize: size, weight: weight)
+        case .lxgwWenKai:
+            return .systemFont(ofSize: size, weight: weight)
+        case .smileySans:
+            return .systemFont(ofSize: size, weight: .heavy)
+        case .maShanZheng:
+            return .systemFont(ofSize: size, weight: weight)
+        case .longCang:
+            return .systemFont(ofSize: size, weight: .semibold)
+        case .zcoolXiaoWei:
+            return .systemFont(ofSize: size, weight: .ultraLight)
+        case .zcoolKuaiLe:
+            return .systemFont(ofSize: size, weight: .bold)
+        case .caveat:
+            return .italicSystemFont(ofSize: size)
+        case .bebasNeue:
+            return .systemFont(ofSize: size, weight: .bold)
+        }
+    }
+
+    func swiftUIFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        let candidates: [String]
+        switch self {
+        case .sourceHanSans:
+            candidates = ["SourceHanSansSC-Medium", "SourceHanSansCN-Medium", "PingFangSC-Medium"]
+        case .sourceHanSerif:
+            candidates = ["SourceHanSerifSC-Regular", "SourceHanSerifCN-Regular", "Songti SC", "Georgia"]
+        case .lxgwWenKai:
+            candidates = ["LXGWWenKai-Regular", "LXGWWenKaiMono-Regular", "Kaiti SC", "STKaiti"]
+        case .smileySans:
+            candidates = ["SmileySans-Oblique", "AvenirNext-Heavy", "Impact"]
+        case .maShanZheng:
+            candidates = ["MaShanZheng-Regular", "Xingkai SC", "STXingkai"]
+        case .longCang:
+            candidates = ["LongCang-Regular", "Chalkduster", "BradleyHandITCTT-Bold"]
+        case .zcoolXiaoWei:
+            candidates = ["ZCOOLXiaoWei-Regular", "STHeitiSC-Light", "PingFangSC-Thin"]
+        case .zcoolKuaiLe:
+            candidates = ["ZCOOLKuaiLe-Regular", "Yuanti SC", "ArialRoundedMTBold"]
+        case .caveat:
+            candidates = ["Caveat", "Caveat-Regular", "SnellRoundhand", "Bradley Hand"]
+        case .bebasNeue:
+            candidates = ["BebasNeue", "BebasNeue-Regular", "DIN Condensed Bold", "Impact"]
+        }
+
+        for name in candidates {
+            if UIFont(name: name, size: size) != nil {
+                return .custom(name, size: size)
+            }
+        }
+
+        switch self {
+        case .sourceHanSans:
+            return .system(size: size, weight: weight, design: .default)
+        case .sourceHanSerif:
+            return .system(size: size, weight: weight, design: .serif)
+        case .lxgwWenKai:
+            return .system(size: size, weight: weight, design: .serif)
+        case .smileySans:
+            return .system(size: size, weight: .heavy, design: .default)
+        case .maShanZheng:
+            return .system(size: size, weight: weight, design: .serif)
+        case .longCang:
+            return .system(size: size, weight: .semibold, design: .serif)
+        case .zcoolXiaoWei:
+            return .system(size: size, weight: .ultraLight, design: .serif)
+        case .zcoolKuaiLe:
+            return .system(size: size, weight: .bold, design: .rounded)
+        case .caveat:
+            return .system(size: size, weight: weight, design: .serif).italic()
+        case .bebasNeue:
+            return .system(size: size, weight: .bold, design: .monospaced)
         }
     }
 }

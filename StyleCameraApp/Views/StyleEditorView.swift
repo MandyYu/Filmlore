@@ -6,8 +6,10 @@ struct StyleEditorView: View {
     let preset: StylePreset
     let previewStore: CameraPreviewStore?
     let isCreatingNew: Bool
+    let isProUnlocked: Bool
     let saveChanges: ((StylePreset.ID, String, StyleParams) -> Void)?
     let saveAsNew: (String, StyleParams) -> Void
+    let requestUpgrade: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var newStyleName: String
@@ -17,13 +19,17 @@ struct StyleEditorView: View {
     init(
         preset: StylePreset,
         previewStore: CameraPreviewStore? = nil,
+        isProUnlocked: Bool,
+        requestUpgrade: @escaping () -> Void,
         save: @escaping (String, StyleParams) -> Void
     ) {
         self.preset = preset
         self.previewStore = previewStore
         isCreatingNew = true
+        self.isProUnlocked = isProUnlocked
         saveChanges = nil
         saveAsNew = save
+        self.requestUpgrade = requestUpgrade
         _newStyleName = State(initialValue: "\(preset.name) 副本")
         _params = State(initialValue: preset.params)
     }
@@ -32,14 +38,18 @@ struct StyleEditorView: View {
         preset: StylePreset,
         previewStore: CameraPreviewStore? = nil,
         isCreatingNew: Bool,
+        isProUnlocked: Bool,
         saveChanges: ((StylePreset.ID, String, StyleParams) -> Void)?,
-        saveAsNew: @escaping (String, StyleParams) -> Void
+        saveAsNew: @escaping (String, StyleParams) -> Void,
+        requestUpgrade: @escaping () -> Void
     ) {
         self.preset = preset
         self.previewStore = previewStore
         self.isCreatingNew = isCreatingNew
+        self.isProUnlocked = isProUnlocked
         self.saveChanges = saveChanges
         self.saveAsNew = saveAsNew
+        self.requestUpgrade = requestUpgrade
 
         let suggestedName: String
         if isCreatingNew {
@@ -76,22 +86,43 @@ struct StyleEditorView: View {
                     VStack(spacing: 16) {
                         StyleParameterControls(params: $params)
 
-                        Button(action: requestSaveAsNew) {
-                            Text("另存为新风格")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(
-                                    StyleCameraTheme.primaryGradient,
-                                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                )
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                        .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        HStack(spacing: 10) {
+                            if preset.isBuiltIn {
+                                Button(action: resetBuiltInStyle) {
+                                    Label("重置", systemImage: "arrow.counterclockwise")
+                                        .font(.headline)
+                                        .foregroundStyle(StyleCameraTheme.palePink)
+                                        .frame(width: 92, height: 52)
+                                        .background(
+                                            StyleCameraTheme.elevatedBackground,
+                                            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        )
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                .stroke(StyleCameraTheme.divider, lineWidth: 1)
+                                        }
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("恢复内置风格原始参数")
+                            }
+
+                            Button(action: requestSaveAsNew) {
+                                Text("另存为新风格")
+                                    .font(.headline)
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 52)
+                                    .background(
+                                        StyleCameraTheme.primaryGradient,
+                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    )
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                                    }
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
 
                         Text("自定义风格属于 StyleCamera Pro 功能。")
                             .font(.caption)
@@ -172,17 +203,35 @@ struct StyleEditorView: View {
     }
 
     private func saveCurrentStyle() {
-        guard let saveChanges, !isCreatingNew else {
-            requestSaveAsNew()
+        if isCreatingNew {
+            guard isProUnlocked else {
+                requestUpgrade()
+                return
+            }
+            saveAsNew(normalizedNewStyleName, normalizedParams)
+            dismiss()
             return
         }
 
-        saveChanges(preset.id, preset.name, normalizedParams)
+        saveChanges?(preset.id, preset.name, normalizedParams)
         dismiss()
     }
 
     private func requestSaveAsNew() {
+        guard isProUnlocked else {
+            requestUpgrade()
+            return
+        }
         isShowingNamePrompt = true
+    }
+
+    private func resetBuiltInStyle() {
+        guard let originalPreset = BuiltInPresets.all.first(where: { $0.id == preset.id }) else {
+            return
+        }
+        withAnimation(.easeOut(duration: 0.2)) {
+            params = originalPreset.params
+        }
     }
 
     private func saveNamedStyle() {
