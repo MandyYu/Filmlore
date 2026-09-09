@@ -9,6 +9,7 @@ struct CameraControlsView: View {
     let capture: () -> Void
     let openStylePreview: () -> Void
     let isStyleActive: Bool
+    let isProcessingHighResolutionPhoto: Bool
 
     var body: some View {
         ZStack {
@@ -117,7 +118,20 @@ struct CameraControlsView: View {
                 Circle()
                     .stroke(StyleCameraTheme.primary.opacity(0.6), lineWidth: 1.5)
             }
+            .overlay(alignment: .bottomTrailing) {
+                if isProcessingHighResolutionPhoto {
+                    ProgressView()
+                        .tint(.white)
+                        .controlSize(.small)
+                        .padding(5)
+                        .background(.black.opacity(0.68), in: Circle())
+                        .offset(x: 3, y: 3)
+                }
+            }
         }
+        .accessibilityLabel(
+            isProcessingHighResolutionPhoto ? "最近照片，高清处理中" : "最近照片"
+        )
     }
 
 }

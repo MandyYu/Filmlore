@@ -31,7 +31,8 @@ struct CameraView: View {
                             captureMode: viewModel.captureMode,
                             capture: viewModel.capturePrimaryAction,
                             openStylePreview: openStylePreview,
-                            isStyleActive: isStyleActive
+                            isStyleActive: isStyleActive,
+                            isProcessingHighResolutionPhoto: viewModel.isProcessingHighResolutionPhoto
                         )
                     }
 //                .padding(.top, proxy.safeAreaInsets.top)
@@ -160,6 +161,10 @@ struct CameraView: View {
         if !viewModel.photoFrame.style.isFree {
             viewModel.photoFrame.style = .cleanWhite
         }
+
+        if viewModel.selectedTemplate?.isPro == true {
+            viewModel.selectedTemplate = nil
+        }
     }
 
     private func settingsView(route: CameraSettingsRoute?) -> some View {
@@ -168,6 +173,8 @@ struct CameraView: View {
             watermark: $viewModel.watermark,
             photoFrame: $viewModel.photoFrame,
             guidanceSettings: $viewModel.guidanceSettings,
+            selectedTemplateID: viewModel.selectedTemplateID,
+            selectedTemplate: viewModel.selectedTemplate,
             previewStore: viewModel.previewStore,
             rawPreviewStore: viewModel.rawPreviewStore,
             stylePreviewStore: viewModel.stylePreviewStore,
@@ -182,6 +189,7 @@ struct CameraView: View {
             currentStyleName: viewModel.selection.selectedPreset.name,
             locationText: viewModel.locationText,
             requestLocation: viewModel.requestWatermarkLocation,
+            applyTemplate: viewModel.applyTemplate,
             openRoute: openSettingsRoute,
             close: closeSettingsOverlay
         )
@@ -378,10 +386,12 @@ struct CameraView: View {
                 GridOverlayView()
             }
 
-            LiveFrameOverlayView(preset: viewModel.photoFrame)
+            LiveFrameOverlayView(preset: viewModel.activePhotoFrame)
 
             LiveWatermarkOverlayView(
-                watermark: viewModel.watermark,
+                watermark: viewModel.activeWatermark,
+                photoFrame: viewModel.activePhotoFrame,
+                cameraTemplate: viewModel.selectedTemplate,
                 styleName: viewModel.selection.selectedPreset.name,
                 locationText: viewModel.locationText,
                 rollDegrees: viewModel.currentRollDegrees,
@@ -410,7 +420,7 @@ struct CameraView: View {
                     .accessibilityLabel(viewModel.flashMode.accessibilityTitle)
 
                     WatermarkToggleButton(
-                        isOn: viewModel.watermark.enabled,
+                        isOn: viewModel.activeWatermark.enabled,
                         action: viewModel.toggleWatermark
                     )
 
@@ -818,8 +828,161 @@ private struct WatermarkTemplateTextView: View {
     }
 }
 
+struct CameraTemplateSlotBarView: View {
+    let template: CameraTemplatePreset
+    let styleName: String
+    let locationText: String?
+    let baseFontSize: CGFloat
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: compact ? 4 : 10) {
+            columnView(
+                template.insetContent.left,
+                horizontalAlignment: .leading,
+                frameAlignment: .leading
+            )
+            columnView(
+                template.insetContent.center,
+                horizontalAlignment: .center,
+                frameAlignment: .center
+            )
+            columnView(
+                template.insetContent.right,
+                horizontalAlignment: .trailing,
+                frameAlignment: .trailing
+            )
+        }
+        .padding(.horizontal, compact ? 8 : 20)
+    }
+
+    private func columnView(
+        _ column: CameraTemplateContentColumn,
+        horizontalAlignment: HorizontalAlignment,
+        frameAlignment: Alignment
+    ) -> some View {
+        VStack(alignment: horizontalAlignment, spacing: compact ? 1 : 3) {
+            ForEach(column.lines.indices, id: \.self) { lineIndex in
+                lineView(
+                    column.lines[lineIndex],
+                    frameAlignment: frameAlignment
+                )
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: frameAlignment)
+    }
+
+    private func lineView(
+        _ line: CameraTemplateContentLine,
+        frameAlignment: Alignment
+    ) -> some View {
+        HStack(spacing: compact ? 2 : 5) {
+            ForEach(line.fields.indices, id: \.self) { fieldIndex in
+                slotView(line.fields[fieldIndex])
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: frameAlignment)
+    }
+
+    @ViewBuilder
+    private func slotView(_ slot: CameraTemplateSlot) -> some View {
+        let resolved = template.resolvedSlot(
+            slot,
+            styleName: styleName,
+            deviceName: "iPhone",
+            locationText: locationText,
+            dateText: Self.dateFormatter.string(from: Date()),
+            weekdayText: Self.weekdayFormatter.string(from: Date())
+        )
+
+        Group {
+            switch resolved {
+            case .empty:
+                EmptyView()
+            case let .icon(name):
+                templateIcon(named: name, slot: slot)
+            case let .text(text):
+                Text(text)
+                    .font(slotFont(for: slot))
+                    .foregroundStyle(slotColor(for: slot))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.55)
+            }
+        }
+        .shadow(
+            color: template.watermark.effect == .shadow ? .black.opacity(0.42) : .clear,
+            radius: compact ? 1 : 3,
+            y: 1
+        )
+    }
+
+    private func slotFont(for slot: CameraTemplateSlot) -> Font {
+        template.watermark.font.swiftUIFont(
+            size: slotPointSize(for: slot),
+            weight: .semibold
+        )
+    }
+
+    private func slotPointSize(for slot: CameraTemplateSlot) -> CGFloat {
+        baseFontSize
+            * CGFloat(template.watermark.watermarkScale)
+            * CGFloat(slot.fontScale)
+    }
+
+    @ViewBuilder
+    private func templateIcon(named name: String, slot: CameraTemplateSlot) -> some View {
+        if let image = UIImage(named: name) {
+            Image(uiImage: image)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(height: slotPointSize(for: slot) * 1.2)
+                .foregroundStyle(slotColor(for: slot))
+                .accessibilityLabel(CityIconName(rawValue: name)?.displayName ?? "模板图标")
+        } else {
+            Image(systemName: name)
+                .font(slotFont(for: slot))
+                .foregroundStyle(slotColor(for: slot))
+        }
+    }
+
+    private func slotColor(for slot: CameraTemplateSlot) -> Color {
+        let alpha = Double(template.watermark.opacity)
+        let color = slot.textColor == .automatic
+            ? template.watermark.textColor
+            : slot.textColor
+        switch color {
+        case .automatic:
+            return template.photoFrame.backgroundColor == .black
+                ? .white.opacity(alpha)
+                : .black.opacity(alpha)
+        case .white: return .white.opacity(alpha)
+        case .black: return .black.opacity(alpha)
+        case .yellow: return Color(red: 1, green: 0.86, blue: 0.12).opacity(alpha)
+        case .orange: return StyleCameraTheme.orange.opacity(alpha)
+        case .blue: return StyleCameraTheme.accentBlue.opacity(alpha)
+        case .pink: return StyleCameraTheme.primary.opacity(alpha)
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy.MM.dd"
+        return formatter
+    }()
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+}
+
 private struct LiveWatermarkOverlayView: View {
     let watermark: WatermarkPreset
+    let photoFrame: PhotoFramePreset
+    let cameraTemplate: CameraTemplatePreset?
     let styleName: String
     let locationText: String?
     let rollDegrees: Double
@@ -829,7 +992,21 @@ private struct LiveWatermarkOverlayView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if shouldShowWatermark {
+            if let cameraTemplate,
+               shouldShowTemplateSlots,
+               let bandRect = PhotoFrameLayoutMetrics.bottomBandRect(
+                   in: proxy.size,
+                   preset: photoFrame
+               ) {
+                CameraTemplateSlotBarView(
+                    template: cameraTemplate,
+                    styleName: styleName,
+                    locationText: locationText,
+                    baseFontSize: CameraTemplateTypography.baseFontSize(in: proxy.size)
+                )
+                .frame(width: bandRect.width, height: bandRect.height)
+                .position(x: bandRect.midX, y: bandRect.midY)
+            } else if shouldShowWatermark {
                 watermarkContent(in: proxy.size)
                     .rotationEffect(.degrees(displayOrientation.textRotationDegrees))
                     .position(anchorPoint(in: proxy.size))
@@ -862,6 +1039,30 @@ private struct LiveWatermarkOverlayView: View {
             return !displayText.isEmpty
         case .image:
             return watermarkImage != nil
+        }
+    }
+
+    private var shouldShowTemplateSlots: Bool {
+        guard watermark.enabled,
+              watermark.mode == .manual,
+              watermark.position == .bottom,
+              let cameraTemplate,
+              cameraTemplate.hasSlotContent else {
+            return false
+        }
+
+        return cameraTemplate.insetContent.columns
+            .flatMap(\.lines)
+            .flatMap(\.fields)
+            .contains {
+            !cameraTemplate.resolvedSlot(
+                $0,
+                styleName: styleName,
+                deviceName: "iPhone",
+                locationText: locationText,
+                dateText: Self.dateFormatter.string(from: Date()),
+                weekdayText: Self.weekdayFormatter.string(from: Date())
+            ).isEmpty
         }
     }
 
@@ -1007,7 +1208,7 @@ private struct LiveWatermarkOverlayView: View {
         watermark.effect == .shadow ? 2 : 0
     }
 
-    private var configuredAnchor: CGPoint {
+    private func configuredAnchor(in size: CGSize) -> CGPoint {
         switch watermark.position {
         case .topLeft:
             return CGPoint(x: 0.2, y: 0.08)
@@ -1019,18 +1220,29 @@ private struct LiveWatermarkOverlayView: View {
             return CGPoint(x: 0.78, y: 0.91)
         case .bottomCenter:
             return CGPoint(x: 0.5, y: 0.91)
+        case .bottom:
+            guard let center = PhotoFrameLayoutMetrics.bottomBandCenter(
+                in: size,
+                preset: photoFrame
+            ) else {
+                return CGPoint(x: 0.5, y: 0.91)
+            }
+            return CGPoint(
+                x: center.x / max(1, size.width),
+                y: center.y / max(1, size.height)
+            )
         case .custom:
             let custom = watermark.customPosition ?? WatermarkAnchor(x: 0.5, y: 0.86)
             return CGPoint(x: CGFloat(custom.x), y: CGFloat(custom.y))
         }
     }
 
-    private var displayAnchor: CGPoint {
-        displayOrientation.displayAnchor(from: configuredAnchor)
+    private func displayAnchor(in size: CGSize) -> CGPoint {
+        displayOrientation.displayAnchor(from: configuredAnchor(in: size))
     }
 
     private func anchorPoint(in size: CGSize) -> CGPoint {
-        let anchor = displayAnchor
+        let anchor = displayAnchor(in: size)
 
         return CGPoint(
             x: max(24, min(size.width - 24, anchor.x * size.width)),
@@ -1039,7 +1251,7 @@ private struct LiveWatermarkOverlayView: View {
     }
 
     private func updateWatermarkPosition(for value: DragGesture.Value, in size: CGSize) {
-        let startAnchor = dragStartDisplayAnchor ?? displayAnchor
+        let startAnchor = dragStartDisplayAnchor ?? displayAnchor(in: size)
         if dragStartDisplayAnchor == nil {
             dragStartDisplayAnchor = startAnchor
         }
@@ -1166,7 +1378,7 @@ private struct LiveFrameOverlayView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            if preset.enabled {
+            if preset.shouldRenderFrame {
                 let layout = PhotoFrameLayoutMetrics.make(in: proxy.size, preset: preset)
 
                 ZStack {
@@ -1402,6 +1614,8 @@ private struct StylePreviewComparisonView: View {
 
 private enum CameraSettingsRoute: Hashable {
     case pro
+    case templates
+    case templateEditor(String)
     case styles
     case watermark
     case watermarkEditor(WatermarkEditorTarget)
@@ -1426,6 +1640,8 @@ private struct CameraSettingsView: View {
     @Binding var watermark: WatermarkPreset
     @Binding var photoFrame: PhotoFramePreset
     @Binding var guidanceSettings: PhotoGuidanceSettings
+    let selectedTemplateID: String?
+    let selectedTemplate: CameraTemplatePreset?
     let previewStore: CameraPreviewStore
     let rawPreviewStore: CameraPreviewStore
     let stylePreviewStore: StylePreviewStore
@@ -1440,6 +1656,7 @@ private struct CameraSettingsView: View {
     let currentStyleName: String
     let locationText: String?
     let requestLocation: () -> Void
+    let applyTemplate: (CameraTemplatePreset) -> Void
     let openRoute: (CameraSettingsRoute) -> Void
     let close: () -> Void
     @State private var managedStylePresets = [StylePreset]()
@@ -1517,6 +1734,15 @@ private struct CameraSettingsView: View {
             ScrollView {
                 LazyVStack(spacing: 12) {
 
+                    SettingsFeatureLinkCard(
+                        title: "模板",
+                        summary: "水印与相框的一体化方案",
+                        iconName: "rectangle.3.group.fill",
+                        tint: StyleCameraTheme.primary,
+                        badge: "NEW",
+                        open: { openRoute(.templates) }
+                    )
+
                     SettingsFeatureCard(
                         title: "水印",
                         summary: "时间 / 位置 / 风格 / 自定义签名",
@@ -1587,6 +1813,27 @@ private struct CameraSettingsView: View {
         switch route {
         case .pro:
             ProUpgradeView()
+        case .templates:
+            CameraTemplateGalleryView(
+                selectedTemplateID: selectedTemplateID,
+                openTemplate: { template in
+                    openRoute(.templateEditor(template.id))
+                },
+                selectTemplate: applyTemplate,
+                requestUpgrade: { openRoute(.pro) }
+            )
+        case let .templateEditor(id):
+            if let template = BuiltInCameraTemplates.preset(id: id) {
+                CameraTemplateEditorView(
+                    template: templateDraft(for: template),
+                    previewStore: previewStore,
+                    styleName: currentStyleName,
+                    locationText: locationText,
+                    save: applyTemplate
+                )
+            } else {
+                ContentUnavailableView("模板不可用", systemImage: "rectangle.slash")
+            }
         case .styles:
             styleSettingsPage
         case .watermark:
@@ -1605,6 +1852,11 @@ private struct CameraSettingsView: View {
         case .guidance:
             guidanceSettingsPage
         }
+    }
+
+    private func templateDraft(for template: CameraTemplatePreset) -> CameraTemplatePreset {
+        guard selectedTemplate?.id == template.id else { return template }
+        return selectedTemplate ?? template
     }
 
     private var styleSettingsPage: some View {
@@ -3529,6 +3781,8 @@ private struct WatermarkPreviewView: View {
             return CGPoint(x: 0.78, y: 0.72)
         case .bottomCenter:
             return CGPoint(x: 0.5, y: 0.72)
+        case .bottom:
+            return CGPoint(x: 0.5, y: 0.82)
         case .custom:
             let custom = watermark.customPosition ?? WatermarkAnchor(x: 0.5, y: 0.72)
             return CGPoint(x: CGFloat(custom.x), y: CGFloat(custom.y))
@@ -3908,6 +4162,7 @@ private extension WatermarkTemplate {
         case .bottomLeft: return .bottomLeading
         case .bottomRight: return .bottomTrailing
         case .bottomCenter: return .bottom
+        case .bottom: return .bottom
         case .custom: return .center
         }
     }
@@ -3975,6 +4230,7 @@ private extension WatermarkPosition {
         case .bottomLeft: return "左下"
         case .bottomRight: return "右下"
         case .bottomCenter: return "底部居中"
+        case .bottom: return "底部留白"
         case .custom: return "自由拖动"
         }
     }
@@ -3986,6 +4242,7 @@ private extension WatermarkPosition {
         case .bottomLeft: return "arrow.down.left"
         case .bottomRight: return "arrow.down.right"
         case .bottomCenter: return "arrow.down.to.line.compact"
+        case .bottom: return "rectangle.bottomhalf.inset.filled"
         case .custom: return "move.3d"
         }
     }

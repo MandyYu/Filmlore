@@ -212,6 +212,82 @@ private final class StylePreviewRenderWorker: @unchecked Sendable {
     }
 }
 
+private struct CaptureRenderConfiguration: Sendable {
+    let style: StylePreset
+    let watermark: WatermarkPreset
+    let photoFrame: PhotoFramePreset
+    let cameraTemplate: CameraTemplatePreset?
+    let locationText: String?
+    let captureAspectRatio: CaptureAspectRatio
+}
+
+private final class CapturedPhotoRenderWorker: @unchecked Sendable {
+    private let renderer = StyleRenderer()
+    private let watermarkRenderer = WatermarkRenderer()
+    private lazy var photoFrameRenderer = PhotoFrameRenderer(context: renderer.context)
+
+    func render(
+        _ input: CIImage,
+        configuration: CaptureRenderConfiguration
+    ) -> CIImage {
+        let croppedInput = CameraViewModel.centerCrop(
+            input,
+            to: configuration.captureAspectRatio
+        )
+        var output = renderer.applyStyle(to: croppedInput, params: configuration.style.params)
+        output = renderer.normalized(output)
+        let activePhotoFrame = configuration.cameraTemplate?.photoFrame
+            ?? configuration.photoFrame
+        output = photoFrameRenderer.renderFrame(
+            around: output,
+            preset: activePhotoFrame
+        )
+
+        if let template = configuration.cameraTemplate {
+            output = watermarkRenderer.renderTemplateWatermark(
+                on: output,
+                template: template,
+                styleName: configuration.style.name,
+                locationText: configuration.locationText
+            )
+        } else if configuration.watermark.enabled {
+            output = watermarkRenderer.renderWatermark(
+                on: output,
+                preset: configuration.watermark,
+                styleName: configuration.style.name,
+                locationText: configuration.locationText,
+                photoFrame: activePhotoFrame
+            )
+        }
+        return output
+    }
+
+    func jpegData(from image: CIImage) -> Data? {
+        guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        return renderer.context.jpegRepresentation(
+            of: image,
+            colorSpace: colorSpace,
+            options: [
+                kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.98
+            ]
+        )
+    }
+
+    func thumbnail(from image: CIImage) -> UIImage? {
+        let normalized = renderer.normalized(image)
+        let longestSide = max(normalized.extent.width, normalized.extent.height)
+        guard longestSide > 0 else { return nil }
+        let scale = min(1, 512 / longestSide)
+        let thumbnail = normalized.transformed(
+            by: CGAffineTransform(scaleX: scale, y: scale)
+        )
+        guard let cgImage = renderer.context.createCGImage(thumbnail, from: thumbnail.extent) else {
+            return nil
+        }
+        return UIImage(cgImage: cgImage)
+    }
+}
+
 @MainActor
 final class CameraViewModel: ObservableObject {
     @Published var selectedStyleName = BuiltInPresets.foodINS.name
@@ -229,11 +305,18 @@ final class CameraViewModel: ObservableObject {
             Self.savePhotoFramePreset(photoFrame)
         }
     }
+    @Published var selectedTemplate: CameraTemplatePreset? {
+        didSet {
+            Self.saveSelectedTemplate(selectedTemplate)
+            updateMotionTracking()
+        }
+    }
     @Published var selectedLens: CGFloat = 1
     @Published var isStyleEditorPresented = false
     @Published var isPhotoLibraryPresented = false
     @Published var isSettingsPresented = false
     @Published var lastSavedThumbnail: UIImage?
+    @Published private(set) var isProcessingHighResolutionPhoto = false
     @Published var captureMode: CaptureMode = .photo
     @Published var captureAspectRatio: CaptureAspectRatio {
         didSet {
@@ -259,16 +342,14 @@ final class CameraViewModel: ObservableObject {
     let stylePreviewStore = StylePreviewStore()
 
     private let cameraEngine = CameraEngine()
-    private let renderer = StyleRenderer()
     private let photoLibrary = PhotoLibraryService()
-    private let watermarkRenderer = WatermarkRenderer()
-    private lazy var photoFrameRenderer = PhotoFrameRenderer(context: renderer.context)
     private let locationService = CameraLocationService()
     private let motionLevelService = MotionLevelService()
     private let renderQueue = DispatchQueue(label: "stylecamera.preview.render.queue")
     private let stylePreviewQueue = DispatchQueue(label: "stylecamera.style.preview.render.queue", qos: .userInitiated)
     private let livePreviewRenderWorker = LivePreviewRenderWorker()
     private let stylePreviewRenderWorker = StylePreviewRenderWorker()
+    private let capturedPhotoRenderWorker = CapturedPhotoRenderWorker()
     private var lastGuidanceAnalysisAt: TimeInterval = 0
     private var lastGuidanceDisplayAt: TimeInterval = 0
     private var isStylePreviewComparisonActive = false
@@ -279,10 +360,24 @@ final class CameraViewModel: ObservableObject {
     private var latestPreviewFrameID = 0
     private var stylePreviewRenderGeneration = 0
     private var lastGuidanceMessage: String?
+    private var pendingCaptures: [UUID: CaptureRenderConfiguration] = [:]
+
+    var selectedTemplateID: String? {
+        selectedTemplate?.id
+    }
+
+    var activeWatermark: WatermarkPreset {
+        selectedTemplate?.watermark ?? watermark
+    }
+
+    var activePhotoFrame: PhotoFramePreset {
+        selectedTemplate?.photoFrame ?? photoFrame
+    }
 
     init() {
         watermark = Self.loadWatermarkPreset()
         photoFrame = Self.loadPhotoFramePreset()
+        selectedTemplate = Self.loadSelectedTemplate()
         guidanceSettings = Self.loadGuidanceSettings()
         captureAspectRatio = Self.loadCaptureAspectRatio()
         selection = StyleSelectionModel(
@@ -315,15 +410,34 @@ final class CameraViewModel: ObservableObject {
             self?.renderPreview(image)
         }
 
-        cameraEngine.onPhotoCaptured = { [weak self] image in
-            self?.processCapturedPhoto(image)
+        cameraEngine.onPhotoCaptured = { [weak self] requestID, image in
+            Task { @MainActor in
+                self?.processCapturedPhoto(requestID: requestID, image: image)
+            }
+        }
+
+        cameraEngine.onDeferredPhotoCaptured = { [weak self] requestID, proxyImage, proxyData in
+            Task { @MainActor in
+                self?.processDeferredPhoto(
+                    requestID: requestID,
+                    proxyImage: proxyImage,
+                    proxyData: proxyData
+                )
+            }
+        }
+
+        cameraEngine.onPhotoCaptureFailed = { [weak self] requestID in
+            Task { @MainActor in
+                self?.finishCapture(requestID: requestID)
+            }
         }
     }
 
     func start() {
         cameraEngine.configure()
         updateMotionTracking()
-        if watermark.includeLocation {
+        if selectedTemplate?.usesLocation == true
+            || (selectedTemplate == nil && watermark.includeLocation) {
             requestWatermarkLocation()
         }
     }
@@ -335,7 +449,24 @@ final class CameraViewModel: ObservableObject {
     }
 
     func capturePhoto() {
-        cameraEngine.capturePhoto(flashMode: flashMode)
+        let requestID = UUID()
+        pendingCaptures[requestID] = CaptureRenderConfiguration(
+            style: selection.selectedPreset,
+            watermark: watermark,
+            photoFrame: photoFrame,
+            cameraTemplate: selectedTemplate,
+            locationText: locationText,
+            captureAspectRatio: captureAspectRatio
+        )
+        isProcessingHighResolutionPhoto = true
+
+        // Match the native Camera interaction: acknowledge the shutter from the
+        // already-rendered live frame while the full-resolution photo is processed.
+        if let preview = previewStore.image {
+            lastSavedThumbnail = preview
+        }
+
+        cameraEngine.capturePhoto(requestID: requestID, flashMode: flashMode)
     }
 
     func capturePrimaryAction() {
@@ -394,7 +525,20 @@ final class CameraViewModel: ObservableObject {
     }
 
     func toggleWatermark() {
-        watermark.enabled.toggle()
+        if var template = selectedTemplate {
+            template.watermark.enabled.toggle()
+            selectedTemplate = template
+        } else {
+            watermark.enabled.toggle()
+        }
+    }
+
+    func applyTemplate(_ template: CameraTemplatePreset) {
+        selectedTemplate = template
+
+        if template.usesLocation {
+            requestWatermarkLocation()
+        }
     }
 
     func requestWatermarkLocation() {
@@ -422,8 +566,14 @@ final class CameraViewModel: ObservableObject {
     func updateWatermarkAnchor(_ unitPoint: CGPoint) {
         let clampedX = Float(max(0.05, min(0.95, unitPoint.x)))
         let clampedY = Float(max(0.05, min(0.95, unitPoint.y)))
-        watermark.position = .custom
-        watermark.customPosition = WatermarkAnchor(x: clampedX, y: clampedY)
+        if var template = selectedTemplate {
+            template.watermark.position = .custom
+            template.watermark.customPosition = WatermarkAnchor(x: clampedX, y: clampedY)
+            selectedTemplate = template
+        } else {
+            watermark.position = .custom
+            watermark.customPosition = WatermarkAnchor(x: clampedX, y: clampedY)
+        }
     }
 
     func setCaptureMode(_ mode: CaptureMode) {
@@ -736,7 +886,7 @@ final class CameraViewModel: ObservableObject {
     }
 
     private func updateMotionTracking() {
-        if guidanceSettings.isEnabled || watermark.enabled {
+        if guidanceSettings.isEnabled || activeWatermark.enabled {
             motionLevelService.start()
         } else {
             motionLevelService.stop()
@@ -744,65 +894,129 @@ final class CameraViewModel: ObservableObject {
         }
     }
 
-    private func processCapturedPhoto(_ input: CIImage) {
-        let style = selection.selectedPreset
-        let watermark = watermark
-        let photoFrame = photoFrame
-        let locationText = locationText
-        let captureAspectRatio = captureAspectRatio
+    private func processCapturedPhoto(requestID: UUID, image: CIImage) {
+        guard let configuration = pendingCaptures[requestID] else { return }
 
-        if watermark.includeLocation {
+        if configuration.cameraTemplate?.usesLocation == true
+            || (configuration.cameraTemplate == nil && configuration.watermark.includeLocation) {
             requestWatermarkLocation()
         }
 
         renderQueue.async { [weak self] in
             guard let self else { return }
-            let croppedInput = Self.centerCrop(input, to: captureAspectRatio)
-            var output = self.renderer.applyStyle(to: croppedInput, params: style.params)
-            output = self.renderer.normalized(output)
+            let worker = self.capturedPhotoRenderWorker
+            let photoLibrary = self.photoLibrary
+            let output = worker.render(image, configuration: configuration)
 
-            output = self.photoFrameRenderer.renderFrame(around: output, preset: photoFrame)
-
-            if watermark.enabled {
-                output = self.watermarkRenderer.renderWatermark(
-                    on: output,
-                    preset: watermark,
-                    styleName: style.name,
-                    locationText: locationText
-                )
-            }
-
-            guard let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
-                  let jpeg = self.renderer.context.jpegRepresentation(
-                    of: output,
-                    colorSpace: colorSpace,
-                    options: [
-                        kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.98
-                    ]
-                  ) else {
+            guard let jpeg = worker.jpegData(from: output) else {
+                Task { @MainActor in
+                    self.finishCapture(requestID: requestID)
+                }
                 return
             }
 
-            self.photoLibrary.savePhotoData(jpeg) { result in
+            photoLibrary.savePhotoData(jpeg) { result in
                 if case .success = result,
                    let image = UIImage(data: jpeg) {
                     Task { @MainActor in
                         self.lastSavedThumbnail = image
                     }
                 }
+                Task { @MainActor in
+                    self.finishCapture(requestID: requestID)
+                }
             }
         }
     }
 
+    private func processDeferredPhoto(
+        requestID: UUID,
+        proxyImage: CIImage,
+        proxyData: Data
+    ) {
+        guard let configuration = pendingCaptures[requestID] else { return }
+        let worker = capturedPhotoRenderWorker
+        let photoLibrary = photoLibrary
+
+        // Render the lightweight proxy first so the recent-photo button quickly
+        // reflects the selected style, frame and watermark.
+        renderQueue.async { [weak self] in
+            guard let self else { return }
+            let renderedProxy = worker.render(proxyImage, configuration: configuration)
+            if let thumbnail = worker.thumbnail(from: renderedProxy) {
+                Task { @MainActor in
+                    self.lastSavedThumbnail = thumbnail
+                }
+            }
+        }
+
+        photoLibrary.saveDeferredPhotoProxy(proxyData) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case let .success(localIdentifier):
+                photoLibrary.requestEditingSource(localIdentifier: localIdentifier) { sourceResult in
+                    switch sourceResult {
+                    case let .success(source):
+                        self.renderQueue.async { [weak self] in
+                            guard let self else { return }
+                            let output = worker.render(
+                                source.image,
+                                configuration: configuration
+                            )
+                            photoLibrary.commitAdjustedPhoto(output, source: source) { _ in
+                                if let thumbnail = worker.thumbnail(from: output) {
+                                    Task { @MainActor in
+                                        self.lastSavedThumbnail = thumbnail
+                                    }
+                                }
+                                Task { @MainActor in
+                                    self.finishCapture(requestID: requestID)
+                                }
+                            }
+                        }
+                    case .failure:
+                        Task { @MainActor in
+                            self.finishCapture(requestID: requestID)
+                        }
+                    }
+                }
+            case .failure:
+                // If full Photo Library access isn't available, preserve the shot
+                // through the standard processed-photo path instead of losing it.
+                self.renderQueue.async { [weak self] in
+                    guard let self else { return }
+                    let output = worker.render(proxyImage, configuration: configuration)
+                    guard let jpeg = worker.jpegData(from: output) else {
+                        Task { @MainActor in
+                            self.finishCapture(requestID: requestID)
+                        }
+                        return
+                    }
+                    photoLibrary.savePhotoData(jpeg) { _ in
+                        Task { @MainActor in
+                            self.finishCapture(requestID: requestID)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func finishCapture(requestID: UUID) {
+        pendingCaptures.removeValue(forKey: requestID)
+        isProcessingHighResolutionPhoto = !pendingCaptures.isEmpty
+    }
+
     private static let watermarkSettingsKey = "stylecamera.watermark.settings"
     private static let photoFrameSettingsKey = "stylecamera.photo.frame.settings"
+    private static let selectedTemplateSettingsKey = "stylecamera.selected.template"
     private static let customStyleSettingsKey = "stylecamera.custom.styles"
     private static let builtInStyleOverridesKey = "stylecamera.builtin.style.overrides"
     private static let disabledStyleSettingsKey = "stylecamera.disabled.styles"
     private static let guidanceSettingsKey = "stylecamera.photo.guidance.settings"
     private static let captureAspectRatioSettingsKey = "stylecamera.capture.aspectRatio"
 
-    nonisolated private static func centerCrop(_ image: CIImage, to aspectRatio: CaptureAspectRatio) -> CIImage {
+    nonisolated fileprivate static func centerCrop(_ image: CIImage, to aspectRatio: CaptureAspectRatio) -> CIImage {
         let normalizedImage = image.transformed(
             by: CGAffineTransform(translationX: -image.extent.origin.x, y: -image.extent.origin.y)
         )
@@ -866,6 +1080,27 @@ final class CameraViewModel: ObservableObject {
             return
         }
         UserDefaults.standard.set(data, forKey: photoFrameSettingsKey)
+    }
+
+    private static func loadSelectedTemplate() -> CameraTemplatePreset? {
+        if let data = UserDefaults.standard.data(forKey: selectedTemplateSettingsKey),
+           let template = try? JSONDecoder().decode(CameraTemplatePreset.self, from: data) {
+            return template
+        }
+
+        guard let legacyID = UserDefaults.standard.string(forKey: selectedTemplateSettingsKey) else {
+            return nil
+        }
+        return BuiltInCameraTemplates.preset(id: legacyID)
+    }
+
+    private static func saveSelectedTemplate(_ template: CameraTemplatePreset?) {
+        guard let template,
+              let data = try? JSONEncoder().encode(template) else {
+            UserDefaults.standard.removeObject(forKey: selectedTemplateSettingsKey)
+            return
+        }
+        UserDefaults.standard.set(data, forKey: selectedTemplateSettingsKey)
     }
 
     private static func loadCustomStylePresets() -> [StylePreset] {

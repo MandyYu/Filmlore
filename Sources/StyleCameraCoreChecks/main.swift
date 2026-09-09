@@ -207,7 +207,7 @@ expect(
     "watermark mode options"
 )
 expect(
-    WatermarkPosition.allCases == [.topLeft, .topRight, .bottomLeft, .bottomRight, .bottomCenter, .custom],
+    WatermarkPosition.allCases == [.topLeft, .topRight, .bottomLeft, .bottomRight, .bottomCenter, .custom, .bottom],
     "watermark position options"
 )
 expect(

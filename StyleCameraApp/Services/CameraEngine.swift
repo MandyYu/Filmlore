@@ -16,9 +16,13 @@ final class CameraEngine: NSObject {
     private var currentPosition: AVCaptureDevice.Position = .back
     private var requestedZoomFactor: CGFloat = 1
     private var lastPhotoRotationAngle: CGFloat = 90
+    private var captureRequestIDs: [Int64: UUID] = [:]
+    private let captureRequestLock = NSLock()
 
     var onPreviewFrame: ((CIImage) -> Void)?
-    var onPhotoCaptured: ((CIImage) -> Void)?
+    var onPhotoCaptured: ((UUID, CIImage) -> Void)?
+    var onDeferredPhotoCaptured: ((UUID, CIImage, Data) -> Void)?
+    var onPhotoCaptureFailed: ((UUID) -> Void)?
 
     func configure() {
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
@@ -39,7 +43,7 @@ final class CameraEngine: NSObject {
         }
     }
 
-    func capturePhoto(flashMode: AVCaptureDevice.FlashMode) {
+    func capturePhoto(requestID: UUID, flashMode: AVCaptureDevice.FlashMode) {
         sessionQueue.async {
             let settings = AVCapturePhotoSettings()
             settings.photoQualityPrioritization = .quality
@@ -50,6 +54,9 @@ final class CameraEngine: NSObject {
             if self.photoOutput.supportedFlashModes.contains(flashMode) {
                 settings.flashMode = flashMode
             }
+            self.captureRequestLock.lock()
+            self.captureRequestIDs[settings.uniqueID] = requestID
+            self.captureRequestLock.unlock()
             self.updatePhotoOrientationForCapture()
             self.photoOutput.capturePhoto(with: settings, delegate: self)
         }
@@ -166,13 +173,49 @@ final class CameraEngine: NSObject {
     private func configurePhotoOutput(for device: AVCaptureDevice) {
         photoOutput.maxPhotoQualityPrioritization = .quality
 
-        guard let largestDimensions = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
-            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
-        }) else {
+        guard let preferredDimensions = preferredPhotoDimensions(
+            from: device.activeFormat.supportedMaxPhotoDimensions
+        ) else {
             return
         }
 
-        photoOutput.maxPhotoDimensions = largestDimensions
+        photoOutput.maxPhotoDimensions = preferredDimensions
+
+        if photoOutput.isResponsiveCaptureSupported {
+            photoOutput.isResponsiveCaptureEnabled = true
+        }
+        if photoOutput.isZeroShutterLagSupported {
+            photoOutput.isZeroShutterLagEnabled = true
+        }
+        if photoOutput.isAutoDeferredPhotoDeliverySupported {
+            photoOutput.isAutoDeferredPhotoDeliveryEnabled = true
+        }
+    }
+
+    private func preferredPhotoDimensions(from dimensions: [CMVideoDimensions]) -> CMVideoDimensions? {
+        guard !dimensions.isEmpty else { return nil }
+
+        let twentyFourMegapixels: Int64 = 24_000_000
+        let twentyFourMegapixelCandidates = dimensions.filter {
+            let pixels = Int64($0.width) * Int64($0.height)
+            return pixels >= 20_000_000 && pixels <= 30_000_000
+        }
+
+        if let closest24MP = twentyFourMegapixelCandidates.min(by: {
+            abs(Int64($0.width) * Int64($0.height) - twentyFourMegapixels)
+                < abs(Int64($1.width) * Int64($1.height) - twentyFourMegapixels)
+        }) {
+            return closest24MP
+        }
+
+        let nonFortyEightMegapixelDimensions = dimensions.filter {
+            Int64($0.width) * Int64($0.height) < 30_000_000
+        }
+        return (nonFortyEightMegapixelDimensions.isEmpty
+            ? dimensions
+            : nonFortyEightMegapixelDimensions).max(by: {
+            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+        })
     }
 
     private func applyDisplayedZoomFactor(
@@ -284,27 +327,82 @@ extension CameraEngine: AVCaptureVideoDataOutputSampleBufferDelegate {
 extension CameraEngine: AVCapturePhotoCaptureDelegate {
     func photoOutput(
         _ output: AVCapturePhotoOutput,
+        didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings,
+        error: Error?
+    ) {
+        guard error != nil,
+              let requestID = requestID(for: resolvedSettings.uniqueID) else {
+            return
+        }
+        finishCapture(requestID: requestID, uniqueID: resolvedSettings.uniqueID, failed: true)
+    }
+
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
         didFinishProcessingPhoto photo: AVCapturePhoto,
         error: Error?
     ) {
+        guard let requestID = requestID(for: photo.resolvedSettings.uniqueID) else {
+            return
+        }
         guard error == nil else {
+            finishCapture(requestID: requestID, uniqueID: photo.resolvedSettings.uniqueID, failed: true)
             return
         }
 
+        guard let image = orientedImage(from: photo) else {
+            finishCapture(requestID: requestID, uniqueID: photo.resolvedSettings.uniqueID, failed: true)
+            return
+        }
+        onPhotoCaptured?(requestID, image)
+        finishCapture(requestID: requestID, uniqueID: photo.resolvedSettings.uniqueID, failed: false)
+    }
+
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishCapturingDeferredPhotoProxy deferredPhotoProxy: AVCaptureDeferredPhotoProxy?,
+        error: Error?
+    ) {
+        guard let proxy = deferredPhotoProxy,
+              let requestID = requestID(for: proxy.resolvedSettings.uniqueID) else {
+            return
+        }
+        guard error == nil,
+              let image = orientedImage(from: proxy),
+              let data = proxy.fileDataRepresentation() else {
+            finishCapture(requestID: requestID, uniqueID: proxy.resolvedSettings.uniqueID, failed: true)
+            return
+        }
+
+        onDeferredPhotoCaptured?(requestID, image, data)
+        finishCapture(requestID: requestID, uniqueID: proxy.resolvedSettings.uniqueID, failed: false)
+    }
+
+    private func orientedImage(from photo: AVCapturePhoto) -> CIImage? {
         if let cgImage = photo.cgImageRepresentation() {
-            let exifOrientation = (photo.metadata[String(kCGImagePropertyOrientation)] as? NSNumber)?.int32Value ?? 1
-            let image = CIImage(cgImage: cgImage).oriented(forExifOrientation: exifOrientation)
-            onPhotoCaptured?(image)
-            return
+            let exifOrientation = (
+                photo.metadata[String(kCGImagePropertyOrientation)] as? NSNumber
+            )?.int32Value ?? 1
+            return CIImage(cgImage: cgImage).oriented(forExifOrientation: exifOrientation)
         }
 
-        guard let data = photo.fileDataRepresentation(),
-              let image = CIImage(
-                data: data,
-                options: [.applyOrientationProperty: true]
-              ) else {
-            return
+        guard let data = photo.fileDataRepresentation() else { return nil }
+        return CIImage(data: data, options: [.applyOrientationProperty: true])
+    }
+
+    private func requestID(for uniqueID: Int64) -> UUID? {
+        captureRequestLock.lock()
+        defer { captureRequestLock.unlock() }
+        return captureRequestIDs[uniqueID]
+    }
+
+    private func finishCapture(requestID: UUID, uniqueID: Int64, failed: Bool) {
+        captureRequestLock.lock()
+        captureRequestIDs.removeValue(forKey: uniqueID)
+        captureRequestLock.unlock()
+
+        if failed {
+            onPhotoCaptureFailed?(requestID)
         }
-        onPhotoCaptured?(image)
     }
 }

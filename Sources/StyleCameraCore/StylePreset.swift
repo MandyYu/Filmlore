@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 public struct StylePreset: Codable, Identifiable, Equatable, Sendable {
     public let id: UUID
@@ -254,6 +255,7 @@ public enum WatermarkPosition: String, Codable, CaseIterable, Sendable {
     case bottomRight
     case bottomCenter
     case custom
+    case bottom
 }
 
 public enum WatermarkVisualStyle: String, Codable, CaseIterable, Sendable {
@@ -360,6 +362,7 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
     public var cornerRadius: Float
     public var shadowEnabled: Bool
     public var backgroundColor: PhotoFrameBackgroundColor
+    public var baseInsets : UIEdgeInsets
 
     public init(
         enabled: Bool = false,
@@ -368,7 +371,8 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
         borderWidth: Float = 24,
         cornerRadius: Float = 12,
         shadowEnabled: Bool = true,
-        backgroundColor: PhotoFrameBackgroundColor = .white
+        backgroundColor: PhotoFrameBackgroundColor = .white,
+        baseInsets: UIEdgeInsets = .zero
     ) {
         self.enabled = enabled
         self.style = style
@@ -377,6 +381,7 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
         self.cornerRadius = min(30, max(0, cornerRadius))
         self.shadowEnabled = shadowEnabled
         self.backgroundColor = backgroundColor
+        self.baseInsets = baseInsets
     }
 
     public init(from decoder: Decoder) throws {
@@ -392,6 +397,7 @@ public struct PhotoFramePreset: Codable, Equatable, Sendable {
         shadowEnabled = try container.decodeIfPresent(Bool.self, forKey: .shadowEnabled) ?? true
         backgroundColor = try container.decodeIfPresent(PhotoFrameBackgroundColor.self, forKey: .backgroundColor)
             ?? ((style == .cleanBlack || style == .film) ? .black : .white)
+        baseInsets = try container.decodeIfPresent(UIEdgeInsets.self, forKey: .baseInsets) ?? .zero
     }
 }
 
