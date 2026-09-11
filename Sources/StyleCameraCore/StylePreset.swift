@@ -5,20 +5,17 @@ public struct StylePreset: Codable, Identifiable, Equatable, Sendable {
     public let id: UUID
     public var name: String
     public var params: StyleParams
-    public var watermark: WatermarkPreset?
     public var isBuiltIn: Bool
 
     public init(
         id: UUID = UUID(),
         name: String,
         params: StyleParams,
-        watermark: WatermarkPreset? = nil,
         isBuiltIn: Bool = false
     ) {
         self.id = id
         self.name = name
         self.params = params
-        self.watermark = watermark
         self.isBuiltIn = isBuiltIn
     }
 }
@@ -40,6 +37,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var includeLocation: Bool
     public var locationOverrideText: String
     public var textColor: WatermarkTextColor
+    public var customTextColorHex: String
     public var font: WatermarkFont
     public var visualStyle: WatermarkVisualStyle
     public var effect: WatermarkEffect
@@ -61,6 +59,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         includeLocation: Bool = false,
         locationOverrideText: String = "",
         textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
         font: WatermarkFont = .sourceHanSans,
         visualStyle: WatermarkVisualStyle = .minimal,
         effect: WatermarkEffect = .shadow
@@ -81,6 +80,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         self.includeLocation = includeLocation
         self.locationOverrideText = locationOverrideText
         self.textColor = textColor
+        self.customTextColorHex = customTextColorHex
         self.font = font
         self.visualStyle = visualStyle
         self.effect = effect
@@ -107,6 +107,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         includeLocation = try container.decodeIfPresent(Bool.self, forKey: .includeLocation) ?? false
         locationOverrideText = try container.decodeIfPresent(String.self, forKey: .locationOverrideText) ?? ""
         textColor = try container.decodeIfPresent(WatermarkTextColor.self, forKey: .textColor) ?? .automatic
+        customTextColorHex = try container.decodeIfPresent(String.self, forKey: .customTextColorHex) ?? "#FFFFFF"
         font = try container.decodeIfPresent(WatermarkFont.self, forKey: .font) ?? .sourceHanSans
         visualStyle = try container.decodeIfPresent(WatermarkVisualStyle.self, forKey: .visualStyle) ?? .minimal
         effect = try container.decodeIfPresent(WatermarkEffect.self, forKey: .effect) ?? .shadow
@@ -130,6 +131,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(includeLocation, forKey: .includeLocation)
         try container.encode(locationOverrideText, forKey: .locationOverrideText)
         try container.encode(textColor, forKey: .textColor)
+        try container.encode(customTextColorHex, forKey: .customTextColorHex)
         try container.encode(font, forKey: .font)
         try container.encode(visualStyle, forKey: .visualStyle)
         try container.encode(effect, forKey: .effect)
@@ -152,6 +154,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         case includeLocation
         case locationOverrideText
         case textColor
+        case customTextColorHex
         case font
         case visualStyle
         case effect
@@ -273,6 +276,7 @@ public enum WatermarkTextColor: String, Codable, CaseIterable, Sendable {
     case orange
     case blue
     case pink
+    case custom
 }
 
 public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
@@ -284,6 +288,7 @@ public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
     case longCang
     case zcoolXiaoWei
     case zcoolKuaiLe
+    case dianZiJueJiangHei
     case caveat
     case bebasNeue
 
@@ -297,6 +302,7 @@ public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
         case .longCang: return "龙藏体 Long Cang"
         case .zcoolXiaoWei: return "站酷小薇体 ZCOOL XiaoWei"
         case .zcoolKuaiLe: return "站酷快乐体 ZCOOL KuaiLe"
+        case .dianZiJueJiangHei: return "点字倔强黑"
         case .caveat: return "Caveat"
         case .bebasNeue: return "Bebas Neue"
         }
@@ -312,6 +318,7 @@ public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
         case .longCang: return "龙藏体"
         case .zcoolXiaoWei: return "站酷小薇体"
         case .zcoolKuaiLe: return "站酷快乐体"
+        case .dianZiJueJiangHei: return "点字倔强黑"
         case .caveat: return "Caveat"
         case .bebasNeue: return "Bebas Neue"
         }
@@ -327,6 +334,7 @@ public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
         case .longCang: return "Long Cang"
         case .zcoolXiaoWei: return "ZCOOL XiaoWei"
         case .zcoolKuaiLe: return "ZCOOL KuaiLe"
+        case .dianZiJueJiangHei: return "ID Jue Jiang Hei"
         case .caveat: return "Caveat"
         case .bebasNeue: return "Bebas Neue"
         }
@@ -342,6 +350,7 @@ public enum WatermarkFont: String, Codable, CaseIterable, Sendable {
         case .longCang: return "狂放手写"
         case .zcoolXiaoWei: return "纤细文艺"
         case .zcoolKuaiLe: return "活泼可爱"
+        case .dianZiJueJiangHei: return "个性硬朗"
         case .caveat: return "英文随写"
         case .bebasNeue: return "窄体硬朗"
         }

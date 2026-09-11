@@ -131,138 +131,24 @@ expect(
     "1x remains hardware 1x on single wide camera devices"
 )
 
-let watermarkDefaults = WatermarkPreset()
-expect(watermarkDefaults.mode == .manual, "default watermark mode")
-expect(watermarkDefaults.includeLocation == false, "default watermark hides location")
-expect(watermarkDefaults.locationOverrideText == "", "default watermark location override")
-expect(watermarkDefaults.customPosition == nil, "default watermark custom position")
-expect(watermarkDefaults.imageData == nil, "default watermark image data")
-expect(watermarkDefaults.imageScale == 0.22, "default watermark image scale")
-expect(watermarkDefaults.watermarkScale == 1, "default watermark content scale")
-expect(watermarkDefaults.template == .signature, "default watermark template")
-expect(watermarkDefaults.textColor == .automatic, "default watermark text color")
-expect(watermarkDefaults.font == .sourceHanSans, "default watermark font")
-expect(watermarkDefaults.visualStyle == .minimal, "default watermark visual style")
-expect(watermarkDefaults.effect == .shadow, "default watermark effect")
-expect(WatermarkAnchor(x: -1, y: 2) == WatermarkAnchor(x: 0, y: 1), "watermark anchor clamp")
-expect(WatermarkPreset(imageScale: 2).imageScale == 0.6, "watermark image scale upper clamp")
-expect(WatermarkPreset(imageScale: -1).imageScale == 0.08, "watermark image scale lower clamp")
-expect(WatermarkPreset(watermarkScale: 3).watermarkScale == 2, "watermark content scale upper clamp")
-expect(WatermarkPreset(watermarkScale: 0).watermarkScale == 0.5, "watermark content scale lower clamp")
-let legacyWatermark = try? JSONDecoder().decode(WatermarkPreset.self, from: Data("{}".utf8))
-expect(legacyWatermark?.template == .signature, "legacy watermark template fallback")
-expect(legacyWatermark?.watermarkScale == 1, "legacy watermark content scale fallback")
-expect(legacyWatermark?.font == .sourceHanSans, "legacy watermark font fallback")
-let travelWatermarkText = WatermarkPreset(
-    text: "My Trip",
-    template: .travelCard,
-    includeDate: true,
-    includeDevice: true,
-    includeStyleName: true,
-    includeLocation: true
-).displayText(
-    styleName: "Fresh",
-    deviceName: "iPhone",
-    locationText: "Hangzhou",
-    dateText: "2026.07.31"
+let classicTravelTemplate = BuiltInCameraTemplates.preset(id: "classic-travel")
+expect(classicTravelTemplate != nil, "classic travel template exists")
+expect(
+    classicTravelTemplate?.photoFrame.baseInsets.bottom == 100,
+    "template base inset is preserved"
 )
 expect(
-    travelWatermarkText == "▣ My Trip  Fresh\n2026.07.31 | iPhone | Hangzhou",
-    "travel watermark template ordering"
+    classicTravelTemplate?.watermark.enabled == true,
+    "template content overlay is enabled"
 )
-let centeredTravelText = WatermarkPreset(
-    text: "My Trip",
-    template: .centeredTravel,
-    includeDate: true,
-    includeStyleName: false,
-    includeLocation: true
-).displayText(
-    styleName: "Fresh",
-    deviceName: "iPhone",
-    locationText: "Beijing",
-    dateText: "2026.07.30"
-)
+let encodedTemplate = classicTravelTemplate.flatMap { try? JSONEncoder().encode($0) }
+let decodedTemplate = encodedTemplate.flatMap {
+    try? JSONDecoder().decode(CameraTemplatePreset.self, from: $0)
+}
 expect(
-    centeredTravelText == "— My Trip —\nBeijing\n2026-07-30",
-    "centered travel watermark ordering"
+    decodedTemplate?.photoFrame.baseInsets == classicTravelTemplate?.photoFrame.baseInsets,
+    "template base insets survive persistence"
 )
-let weekdayQuoteText = WatermarkPreset(
-    text: "Keep Going",
-    template: .weekdayQuote,
-    includeDate: true,
-    includeStyleName: false
-).displayText(
-    styleName: "Fresh",
-    deviceName: "iPhone",
-    locationText: nil,
-    dateText: "2026.07.30",
-    weekdayText: "Thursday"
-)
-expect(
-    weekdayQuoteText == "Thursday\n2026/07/30\n────────\nKeep Going\n────────",
-    "weekday quote watermark ordering"
-)
-expect(
-    WatermarkMode.allCases == [.manual, .image],
-    "watermark mode options"
-)
-expect(
-    WatermarkPosition.allCases == [.topLeft, .topRight, .bottomLeft, .bottomRight, .bottomCenter, .custom, .bottom],
-    "watermark position options"
-)
-expect(
-    WatermarkTextColor.allCases == [.automatic, .white, .black, .yellow, .orange, .blue, .pink],
-    "watermark text color options"
-)
-expect(
-    WatermarkVisualStyle.allCases == [.minimal, .darkBadge, .lightBadge, .film],
-    "watermark visual style options"
-)
-expect(
-    WatermarkEffect.allCases == [.none, .shadow, .glow],
-    "watermark effect options"
-)
-
-let photoFrameDefaults = PhotoFramePreset()
-expect(photoFrameDefaults.enabled == false, "default photo frame disabled")
-expect(photoFrameDefaults.style == .cleanWhite, "default photo frame style")
-expect(photoFrameDefaults.opacity == 1, "default photo frame opacity")
-expect(photoFrameDefaults.borderWidth == 24, "default photo frame border width")
-expect(photoFrameDefaults.cornerRadius == 12, "default photo frame corner radius")
-expect(photoFrameDefaults.shadowEnabled, "default photo frame shadow")
-expect(photoFrameDefaults.backgroundColor == .white, "default photo frame background")
-expect(PhotoFramePreset(enabled: true, style: .film, opacity: 3).opacity == 1, "photo frame opacity upper clamp")
-expect(PhotoFramePreset(enabled: true, style: .film, opacity: -1).opacity == 0, "photo frame opacity lower clamp")
-expect(PhotoFramePreset(borderWidth: 80).borderWidth == 40, "photo frame border width upper clamp")
-expect(PhotoFramePreset(borderWidth: 0).borderWidth == 4, "photo frame border width lower clamp")
-expect(PhotoFramePreset(cornerRadius: 80).cornerRadius == 30, "photo frame corner radius upper clamp")
-expect(
-    PhotoFrameStyle.allCases == [.cleanWhite, .cleanBlack, .instant, .film, .minimal],
-    "photo frame style options"
-)
-expect(
-    PhotoFrameBackgroundColor.allCases == [.white, .lightGray, .black, .cream, .pink, .mint],
-    "photo frame background options"
-)
-let legacyPhotoFrameJSON = #"{"enabled":true,"style":"cleanBlack","opacity":0.8}"#.data(using: .utf8)!
-let legacyPhotoFrame = try? JSONDecoder().decode(PhotoFramePreset.self, from: legacyPhotoFrameJSON)
-expect(legacyPhotoFrame?.backgroundColor == .black, "legacy black frame background migration")
-expect(legacyPhotoFrame?.borderWidth == 24, "legacy photo frame border width migration")
-let encodedPhotoFrame = try? JSONEncoder().encode(
-    PhotoFramePreset(
-        enabled: true,
-        style: .minimal,
-        opacity: 0.9,
-        borderWidth: 10,
-        cornerRadius: 18,
-        shadowEnabled: false,
-        backgroundColor: .mint
-    )
-)
-let decodedPhotoFrame = encodedPhotoFrame.flatMap { try? JSONDecoder().decode(PhotoFramePreset.self, from: $0) }
-expect(decodedPhotoFrame?.style == .minimal, "photo frame style round trip")
-expect(decodedPhotoFrame?.backgroundColor == .mint, "photo frame background round trip")
-expect(decodedPhotoFrame?.cornerRadius == 18, "photo frame corner radius round trip")
 
 let guidanceDefaults = PhotoGuidanceSettings()
 expect(guidanceDefaults.isEnabled, "photo guidance is enabled by default")

@@ -1,6 +1,6 @@
 import AVFoundation
-import CoreLocation
 import CoreImage
+import CoreLocation
 import ImageIO
 import StyleCameraCore
 import SwiftUI
@@ -214,8 +214,6 @@ private final class StylePreviewRenderWorker: @unchecked Sendable {
 
 private struct CaptureRenderConfiguration: Sendable {
     let style: StylePreset
-    let watermark: WatermarkPreset
-    let photoFrame: PhotoFramePreset
     let cameraTemplate: CameraTemplatePreset?
     let locationText: String?
     let captureAspectRatio: CaptureAspectRatio
@@ -236,30 +234,21 @@ private final class CapturedPhotoRenderWorker: @unchecked Sendable {
         )
         var output = renderer.applyStyle(to: croppedInput, params: configuration.style.params)
         output = renderer.normalized(output)
-        let activePhotoFrame = configuration.cameraTemplate?.photoFrame
-            ?? configuration.photoFrame
+
+        guard let template = configuration.cameraTemplate else {
+            return output
+        }
+
         output = photoFrameRenderer.renderFrame(
             around: output,
-            preset: activePhotoFrame
+            preset: template.photoFrame
         )
-
-        if let template = configuration.cameraTemplate {
-            output = watermarkRenderer.renderTemplateWatermark(
-                on: output,
-                template: template,
-                styleName: configuration.style.name,
-                locationText: configuration.locationText
-            )
-        } else if configuration.watermark.enabled {
-            output = watermarkRenderer.renderWatermark(
-                on: output,
-                preset: configuration.watermark,
-                styleName: configuration.style.name,
-                locationText: configuration.locationText,
-                photoFrame: activePhotoFrame
-            )
-        }
-        return output
+        return watermarkRenderer.renderTemplateWatermark(
+            on: output,
+            template: template,
+            styleName: configuration.style.name,
+            locationText: configuration.locationText
+        )
     }
 
     func jpegData(from image: CIImage) -> Data? {
@@ -294,17 +283,6 @@ final class CameraViewModel: ObservableObject {
     @Published private(set) var disabledStyleIDs = Set<StylePreset.ID>()
     @Published var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var showGrid = true
-    @Published var watermark: WatermarkPreset {
-        didSet {
-            Self.saveWatermarkPreset(watermark)
-            updateMotionTracking()
-        }
-    }
-    @Published var photoFrame: PhotoFramePreset {
-        didSet {
-            Self.savePhotoFramePreset(photoFrame)
-        }
-    }
     @Published var selectedTemplate: CameraTemplatePreset? {
         didSet {
             Self.saveSelectedTemplate(selectedTemplate)
@@ -366,17 +344,7 @@ final class CameraViewModel: ObservableObject {
         selectedTemplate?.id
     }
 
-    var activeWatermark: WatermarkPreset {
-        selectedTemplate?.watermark ?? watermark
-    }
-
-    var activePhotoFrame: PhotoFramePreset {
-        selectedTemplate?.photoFrame ?? photoFrame
-    }
-
     init() {
-        watermark = Self.loadWatermarkPreset()
-        photoFrame = Self.loadPhotoFramePreset()
         selectedTemplate = Self.loadSelectedTemplate()
         guidanceSettings = Self.loadGuidanceSettings()
         captureAspectRatio = Self.loadCaptureAspectRatio()
@@ -436,9 +404,8 @@ final class CameraViewModel: ObservableObject {
     func start() {
         cameraEngine.configure()
         updateMotionTracking()
-        if selectedTemplate?.usesLocation == true
-            || (selectedTemplate == nil && watermark.includeLocation) {
-            requestWatermarkLocation()
+        if selectedTemplate?.usesLocation == true {
+            requestTemplateLocation()
         }
     }
 
@@ -452,8 +419,6 @@ final class CameraViewModel: ObservableObject {
         let requestID = UUID()
         pendingCaptures[requestID] = CaptureRenderConfiguration(
             style: selection.selectedPreset,
-            watermark: watermark,
-            photoFrame: photoFrame,
             cameraTemplate: selectedTemplate,
             locationText: locationText,
             captureAspectRatio: captureAspectRatio
@@ -524,25 +489,25 @@ final class CameraViewModel: ObservableObject {
         showGrid.toggle()
     }
 
-    func toggleWatermark() {
-        if var template = selectedTemplate {
-            template.watermark.enabled.toggle()
-            selectedTemplate = template
-        } else {
-            watermark.enabled.toggle()
-        }
-    }
-
     func applyTemplate(_ template: CameraTemplatePreset) {
         selectedTemplate = template
-
         if template.usesLocation {
-            requestWatermarkLocation()
+            requestTemplateLocation()
         }
     }
 
-    func requestWatermarkLocation() {
+    func requestTemplateLocation() {
         locationService.requestLocation()
+    }
+
+    func updateTemplateWatermarkAnchor(_ unitPoint: CGPoint) {
+        guard var template = selectedTemplate else { return }
+        template.watermark.position = .custom
+        template.watermark.customPosition = WatermarkAnchor(
+            x: Float(max(0.05, min(0.95, unitPoint.x))),
+            y: Float(max(0.05, min(0.95, unitPoint.y)))
+        )
+        selectedTemplate = template
     }
 
     func focus(at unitPoint: CGPoint) {
@@ -561,19 +526,6 @@ final class CameraViewModel: ObservableObject {
         let clampedZoom = min(10, max(0.5, zoom))
         selectedLens = clampedZoom
         cameraEngine.setZoomFactor(clampedZoom, animated: animated)
-    }
-
-    func updateWatermarkAnchor(_ unitPoint: CGPoint) {
-        let clampedX = Float(max(0.05, min(0.95, unitPoint.x)))
-        let clampedY = Float(max(0.05, min(0.95, unitPoint.y)))
-        if var template = selectedTemplate {
-            template.watermark.position = .custom
-            template.watermark.customPosition = WatermarkAnchor(x: clampedX, y: clampedY)
-            selectedTemplate = template
-        } else {
-            watermark.position = .custom
-            watermark.customPosition = WatermarkAnchor(x: clampedX, y: clampedY)
-        }
     }
 
     func setCaptureMode(_ mode: CaptureMode) {
@@ -654,7 +606,6 @@ final class CameraViewModel: ObservableObject {
             id: existingPreset.id,
             name: trimmedName.isEmpty ? existingPreset.name : trimmedName,
             params: params,
-            watermark: existingPreset.watermark,
             isBuiltIn: existingPreset.isBuiltIn
         )
         selection.replacePreset(id: id, with: updatedPreset)
@@ -886,7 +837,7 @@ final class CameraViewModel: ObservableObject {
     }
 
     private func updateMotionTracking() {
-        if guidanceSettings.isEnabled || activeWatermark.enabled {
+        if guidanceSettings.isEnabled || selectedTemplate?.watermark.enabled == true {
             motionLevelService.start()
         } else {
             motionLevelService.stop()
@@ -897,9 +848,8 @@ final class CameraViewModel: ObservableObject {
     private func processCapturedPhoto(requestID: UUID, image: CIImage) {
         guard let configuration = pendingCaptures[requestID] else { return }
 
-        if configuration.cameraTemplate?.usesLocation == true
-            || (configuration.cameraTemplate == nil && configuration.watermark.includeLocation) {
-            requestWatermarkLocation()
+        if configuration.cameraTemplate?.usesLocation == true {
+            requestTemplateLocation()
         }
 
         renderQueue.async { [weak self] in
@@ -939,7 +889,7 @@ final class CameraViewModel: ObservableObject {
         let photoLibrary = photoLibrary
 
         // Render the lightweight proxy first so the recent-photo button quickly
-        // reflects the selected style, frame and watermark.
+        // reflects the selected style.
         renderQueue.async { [weak self] in
             guard let self else { return }
             let renderedProxy = worker.render(proxyImage, configuration: configuration)
@@ -1007,8 +957,6 @@ final class CameraViewModel: ObservableObject {
         isProcessingHighResolutionPhoto = !pendingCaptures.isEmpty
     }
 
-    private static let watermarkSettingsKey = "stylecamera.watermark.settings"
-    private static let photoFrameSettingsKey = "stylecamera.photo.frame.settings"
     private static let selectedTemplateSettingsKey = "stylecamera.selected.template"
     private static let customStyleSettingsKey = "stylecamera.custom.styles"
     private static let builtInStyleOverridesKey = "stylecamera.builtin.style.overrides"
@@ -1050,57 +998,6 @@ final class CameraViewModel: ObservableObject {
         return normalizedImage
             .cropped(to: cropRect.integral)
             .transformed(by: CGAffineTransform(translationX: -cropRect.integral.origin.x, y: -cropRect.integral.origin.y))
-    }
-
-    private static func loadWatermarkPreset() -> WatermarkPreset {
-        guard let data = UserDefaults.standard.data(forKey: watermarkSettingsKey),
-              let preset = try? JSONDecoder().decode(WatermarkPreset.self, from: data) else {
-            return WatermarkPreset(enabled: true)
-        }
-        return preset
-    }
-
-    private static func saveWatermarkPreset(_ preset: WatermarkPreset) {
-        guard let data = try? JSONEncoder().encode(preset) else {
-            return
-        }
-        UserDefaults.standard.set(data, forKey: watermarkSettingsKey)
-    }
-
-    private static func loadPhotoFramePreset() -> PhotoFramePreset {
-        guard let data = UserDefaults.standard.data(forKey: photoFrameSettingsKey),
-              let preset = try? JSONDecoder().decode(PhotoFramePreset.self, from: data) else {
-            return PhotoFramePreset()
-        }
-        return preset
-    }
-
-    private static func savePhotoFramePreset(_ preset: PhotoFramePreset) {
-        guard let data = try? JSONEncoder().encode(preset) else {
-            return
-        }
-        UserDefaults.standard.set(data, forKey: photoFrameSettingsKey)
-    }
-
-    private static func loadSelectedTemplate() -> CameraTemplatePreset? {
-        if let data = UserDefaults.standard.data(forKey: selectedTemplateSettingsKey),
-           let template = try? JSONDecoder().decode(CameraTemplatePreset.self, from: data) {
-            return template
-        }
-
-        guard let legacyID = UserDefaults.standard.string(forKey: selectedTemplateSettingsKey) else {
-            return nil
-        }
-        return BuiltInCameraTemplates.preset(id: legacyID)
-    }
-
-    private static func saveSelectedTemplate(_ template: CameraTemplatePreset?) {
-        guard let template,
-              let data = try? JSONEncoder().encode(template) else {
-            UserDefaults.standard.removeObject(forKey: selectedTemplateSettingsKey)
-            return
-        }
-        UserDefaults.standard.set(data, forKey: selectedTemplateSettingsKey)
     }
 
     private static func loadCustomStylePresets() -> [StylePreset] {
@@ -1176,6 +1073,27 @@ final class CameraViewModel: ObservableObject {
     private static func saveCaptureAspectRatio(_ aspectRatio: CaptureAspectRatio) {
         UserDefaults.standard.set(aspectRatio.rawValue, forKey: captureAspectRatioSettingsKey)
     }
+
+    private static func loadSelectedTemplate() -> CameraTemplatePreset? {
+        if let data = UserDefaults.standard.data(forKey: selectedTemplateSettingsKey),
+           let template = try? JSONDecoder().decode(CameraTemplatePreset.self, from: data) {
+            return template
+        }
+
+        guard let legacyID = UserDefaults.standard.string(forKey: selectedTemplateSettingsKey) else {
+            return nil
+        }
+        return BuiltInCameraTemplates.preset(id: legacyID)
+    }
+
+    private static func saveSelectedTemplate(_ template: CameraTemplatePreset?) {
+        guard let template,
+              let data = try? JSONEncoder().encode(template) else {
+            UserDefaults.standard.removeObject(forKey: selectedTemplateSettingsKey)
+            return
+        }
+        UserDefaults.standard.set(data, forKey: selectedTemplateSettingsKey)
+    }
 }
 
 private final class CameraLocationService: NSObject, CLLocationManagerDelegate {
@@ -1226,9 +1144,7 @@ private final class CameraLocationService: NSObject, CLLocationManagerDelegate {
         }
 
         geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
-            let placemark = placemarks?.first
-            let text = Self.locationText(from: placemark)
-            self?.onLocationTextChange?(text)
+            self?.onLocationTextChange?(Self.locationText(from: placemarks?.first))
         }
     }
 
@@ -1238,21 +1154,18 @@ private final class CameraLocationService: NSObject, CLLocationManagerDelegate {
 
     private static func locationText(from placemark: CLPlacemark?) -> String? {
         guard let placemark else { return nil }
-
-        let candidates = [
+        let parts = [
             placemark.locality,
             placemark.subAdministrativeArea,
             placemark.administrativeArea,
             placemark.country
-        ]
-        let parts = candidates.compactMap { value -> String? in
+        ].compactMap { value -> String? in
             guard let value,
                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 return nil
             }
             return value
         }
-
         guard !parts.isEmpty else { return nil }
         return Array(parts.prefix(2)).joined(separator: " · ")
     }

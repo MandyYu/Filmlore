@@ -149,19 +149,6 @@ struct CameraView: View {
         guard proAccess.hasLoadedEntitlement, !proAccess.isProUnlocked else { return }
 
         viewModel.guidanceSettings.isEnabled = false
-
-        if viewModel.watermark.mode == .image || !viewModel.watermark.template.isFree {
-            viewModel.watermark.mode = .manual
-            viewModel.watermark.template = .signature
-            viewModel.watermark.position = .bottomRight
-            viewModel.watermark.customPosition = nil
-            viewModel.watermark.visualStyle = .minimal
-        }
-
-        if !viewModel.photoFrame.style.isFree {
-            viewModel.photoFrame.style = .cleanWhite
-        }
-
         if viewModel.selectedTemplate?.isPro == true {
             viewModel.selectedTemplate = nil
         }
@@ -170,14 +157,14 @@ struct CameraView: View {
     private func settingsView(route: CameraSettingsRoute?) -> some View {
         CameraSettingsView(
             route: route,
-            watermark: $viewModel.watermark,
-            photoFrame: $viewModel.photoFrame,
             guidanceSettings: $viewModel.guidanceSettings,
-            selectedTemplateID: viewModel.selectedTemplateID,
-            selectedTemplate: viewModel.selectedTemplate,
             previewStore: viewModel.previewStore,
             rawPreviewStore: viewModel.rawPreviewStore,
             stylePreviewStore: viewModel.stylePreviewStore,
+            selectedTemplateID: viewModel.selectedTemplateID,
+            selectedTemplate: viewModel.selectedTemplate,
+            selectedStyleName: viewModel.selectedStyleName,
+            locationText: viewModel.locationText,
             stylePresets: viewModel.selection.presets,
             disabledStyleIDs: viewModel.disabledStyleIDs,
             selectedStyleID: viewModel.selection.selectedPreset.id,
@@ -186,9 +173,6 @@ struct CameraView: View {
             deleteStyle: viewModel.deleteCustomStyle,
             setStyleEnabled: viewModel.setStyleEnabled,
             setStyleEditorPreviewActive: viewModel.setStyleEditorPreviewActive,
-            currentStyleName: viewModel.selection.selectedPreset.name,
-            locationText: viewModel.locationText,
-            requestLocation: viewModel.requestWatermarkLocation,
             applyTemplate: viewModel.applyTemplate,
             openRoute: openSettingsRoute,
             close: closeSettingsOverlay
@@ -386,17 +370,19 @@ struct CameraView: View {
                 GridOverlayView()
             }
 
-            LiveFrameOverlayView(preset: viewModel.activePhotoFrame)
+            if let template = viewModel.selectedTemplate {
+                LiveFrameOverlayView(preset: template.photoFrame)
 
-            LiveWatermarkOverlayView(
-                watermark: viewModel.activeWatermark,
-                photoFrame: viewModel.activePhotoFrame,
-                cameraTemplate: viewModel.selectedTemplate,
-                styleName: viewModel.selection.selectedPreset.name,
-                locationText: viewModel.locationText,
-                rollDegrees: viewModel.currentRollDegrees,
-                updatePosition: viewModel.updateWatermarkAnchor
-            )
+                LiveWatermarkOverlayView(
+                    watermark: template.watermark,
+                    photoFrame: template.photoFrame,
+                    cameraTemplate: template,
+                    styleName: viewModel.selectedStyleName,
+                    locationText: viewModel.locationText,
+                    rollDegrees: viewModel.currentRollDegrees,
+                    updatePosition: viewModel.updateTemplateWatermarkAnchor
+                )
+            }
         }
     }
 
@@ -418,11 +404,6 @@ struct CameraView: View {
                         FlashModeButtonLabel(mode: viewModel.flashMode)
                     }
                     .accessibilityLabel(viewModel.flashMode.accessibilityTitle)
-
-                    WatermarkToggleButton(
-                        isOn: viewModel.activeWatermark.enabled,
-                        action: viewModel.toggleWatermark
-                    )
 
                     Button(action: openSettingsOverlay) {
                         Image(systemName: "gearshape.fill")
@@ -828,6 +809,51 @@ private struct WatermarkTemplateTextView: View {
     }
 }
 
+private extension WatermarkTextColor {
+    func previewColor(customHex: String, fallback: Color, opacity: Double) -> Color {
+        switch self {
+        case .automatic: return fallback.opacity(opacity)
+        case .white: return .white.opacity(opacity)
+        case .black: return .black.opacity(opacity)
+        case .yellow: return Color(red: 1, green: 0.86, blue: 0.12).opacity(opacity)
+        case .orange: return Color(red: 1, green: 0.48, blue: 0.16).opacity(opacity)
+        case .blue: return Color(red: 0.36, green: 0.64, blue: 1).opacity(opacity)
+        case .pink: return Color(red: 1, green: 0.48, blue: 0.72).opacity(opacity)
+        case .custom:
+            return (Color(watermarkHex: customHex) ?? fallback).opacity(opacity)
+        }
+    }
+}
+
+private extension Color {
+    init?(watermarkHex: String) {
+        let value = watermarkHex
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard value.count == 6, let rgb = UInt64(value, radix: 16) else {
+            return nil
+        }
+        self.init(
+            red: Double((rgb >> 16) & 0xFF) / 255,
+            green: Double((rgb >> 8) & 0xFF) / 255,
+            blue: Double(rgb & 0xFF) / 255
+        )
+    }
+}
+
+private extension PhotoFrameBackgroundColor {
+    var color: Color {
+        switch self {
+        case .white: return Color(red: 254 / 255, green: 254 / 255, blue: 254 / 255)
+        case .lightGray: return Color(red: 249 / 255, green: 244 / 255, blue: 237 / 255)
+        case .black: return Color(white: 0.03)
+        case .cream: return Color(red: 254 / 255, green: 236 / 255, blue: 222 / 255)
+        case .pink: return Color(red: 253 / 255, green: 204 / 255, blue: 203 / 255)
+        case .mint: return Color(red: 162 / 255, green: 213 / 255, blue: 192 / 255)
+        }
+    }
+}
+
 struct CameraTemplateSlotBarView: View {
     let template: CameraTemplatePreset
     let styleName: String
@@ -917,7 +943,7 @@ struct CameraTemplateSlotBarView: View {
     }
 
     private func slotFont(for slot: CameraTemplateSlot) -> Font {
-        template.watermark.font.swiftUIFont(
+        (slot.font ?? template.watermark.font).swiftUIFont(
             size: slotPointSize(for: slot),
             weight: .semibold
         )
@@ -951,6 +977,9 @@ struct CameraTemplateSlotBarView: View {
         let color = slot.textColor == .automatic
             ? template.watermark.textColor
             : slot.textColor
+        let customHex = slot.textColor == .automatic
+            ? template.watermark.customTextColorHex
+            : slot.customTextColorHex
         switch color {
         case .automatic:
             return template.photoFrame.backgroundColor == .black
@@ -962,6 +991,8 @@ struct CameraTemplateSlotBarView: View {
         case .orange: return StyleCameraTheme.orange.opacity(alpha)
         case .blue: return StyleCameraTheme.accentBlue.opacity(alpha)
         case .pink: return StyleCameraTheme.primary.opacity(alpha)
+        case .custom:
+            return (Color(watermarkHex: customHex) ?? .white).opacity(alpha)
         }
     }
 
@@ -1144,11 +1175,20 @@ private struct LiveWatermarkOverlayView: View {
         let alpha = Double(watermark.opacity)
         switch watermark.visualStyle {
         case .minimal, .darkBadge:
-            return watermark.textColor.previewColor(fallback: .white, opacity: alpha)
+            return watermark.textColor.previewColor(
+                customHex: watermark.customTextColorHex,
+                fallback: .white,
+                opacity: alpha
+            )
         case .lightBadge:
-            return watermark.textColor.previewColor(fallback: .black, opacity: alpha * 0.76)
+            return watermark.textColor.previewColor(
+                customHex: watermark.customTextColorHex,
+                fallback: .black,
+                opacity: alpha * 0.76
+            )
         case .film:
             return watermark.textColor.previewColor(
+                customHex: watermark.customTextColorHex,
                 fallback: Color(red: 1.0, green: 0.88, blue: 0.36),
                 opacity: alpha
             )
@@ -1511,6 +1551,7 @@ private struct ViewfinderCornerShape: Shape {
     }
 }
 
+
 private struct StylePreviewComparisonView: View {
     let presets: [StylePreset]
     let selectedID: StylePreset.ID
@@ -1617,15 +1658,7 @@ private enum CameraSettingsRoute: Hashable {
     case templates
     case templateEditor(String)
     case styles
-    case watermark
-    case watermarkEditor(WatermarkEditorTarget)
-    case photoFrame
     case guidance
-}
-
-private enum WatermarkEditorTarget: Hashable {
-    case manual(WatermarkTemplate)
-    case image
 }
 
 private struct StyleEditorRequest: Identifiable {
@@ -1637,14 +1670,14 @@ private struct StyleEditorRequest: Identifiable {
 private struct CameraSettingsView: View {
     @EnvironmentObject private var proAccess: ProAccessManager
     let route: CameraSettingsRoute?
-    @Binding var watermark: WatermarkPreset
-    @Binding var photoFrame: PhotoFramePreset
     @Binding var guidanceSettings: PhotoGuidanceSettings
-    let selectedTemplateID: String?
-    let selectedTemplate: CameraTemplatePreset?
     let previewStore: CameraPreviewStore
     let rawPreviewStore: CameraPreviewStore
     let stylePreviewStore: StylePreviewStore
+    let selectedTemplateID: String?
+    let selectedTemplate: CameraTemplatePreset?
+    let selectedStyleName: String
+    let locationText: String?
     let stylePresets: [StylePreset]
     let disabledStyleIDs: Set<StylePreset.ID>
     let selectedStyleID: StylePreset.ID
@@ -1653,9 +1686,6 @@ private struct CameraSettingsView: View {
     let deleteStyle: (StylePreset.ID) -> Bool
     let setStyleEnabled: (StylePreset.ID, Bool) -> Bool
     let setStyleEditorPreviewActive: (Bool) -> Void
-    let currentStyleName: String
-    let locationText: String?
-    let requestLocation: () -> Void
     let applyTemplate: (CameraTemplatePreset) -> Void
     let openRoute: (CameraSettingsRoute) -> Void
     let close: () -> Void
@@ -1733,36 +1763,13 @@ private struct CameraSettingsView: View {
 
             ScrollView {
                 LazyVStack(spacing: 12) {
-
                     SettingsFeatureLinkCard(
                         title: "模板",
-                        summary: "水印与相框的一体化方案",
-                        iconName: "rectangle.3.group.fill",
-                        tint: StyleCameraTheme.primary,
-                        badge: "NEW",
-                        open: { openRoute(.templates) }
-                    )
-
-                    SettingsFeatureCard(
-                        title: "水印",
-                        summary: "时间 / 位置 / 风格 / 自定义签名",
-                        iconName: "signature",
-                        tint: StyleCameraTheme.primary,
-                        isEnabled: $watermark.enabled,
-                        isLocked: false,
-                        requestUnlock: {},
-                        open: { openRoute(.watermark) }
-                    )
-
-                    SettingsFeatureCard(
-                        title: "相框",
-                        summary: "白边 / 黑边 / 拍立得 / 胶片",
-                        iconName: "photo.on.rectangle.angled",
+                        summary: "版式 / 留白 / 拍摄信息",
+                        iconName: "square.grid.2x2",
                         tint: StyleCameraTheme.orange,
-                        isEnabled: $photoFrame.enabled,
-                        isLocked: false,
-                        requestUnlock: {},
-                        open: { openRoute(.photoFrame) }
+                        badge: nil,
+                        open: { openRoute(.templates) }
                     )
 
                     SettingsFeatureCard(
@@ -1827,28 +1834,15 @@ private struct CameraSettingsView: View {
                 CameraTemplateEditorView(
                     template: templateDraft(for: template),
                     previewStore: previewStore,
-                    styleName: currentStyleName,
+                    styleName: selectedStyleName,
                     locationText: locationText,
                     save: applyTemplate
                 )
             } else {
-                ContentUnavailableView("模板不可用", systemImage: "rectangle.slash")
+                ContentUnavailableView("模板不存在", systemImage: "square.grid.2x2")
             }
         case .styles:
             styleSettingsPage
-        case .watermark:
-            watermarkSettingsPage
-        case let .watermarkEditor(target):
-            WatermarkEditorView(
-                initialWatermark: watermarkDraft(for: target),
-                previewStore: previewStore,
-                styleName: currentStyleName,
-                locationText: locationText,
-                requestLocation: requestLocation,
-                save: { watermark = $0 }
-            )
-        case .photoFrame:
-            photoFrameSettingsPage
         case .guidance:
             guidanceSettingsPage
         }
@@ -2049,129 +2043,6 @@ private struct CameraSettingsView: View {
         }
     }
 
-    private var watermarkSettingsPage: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                SettingsToggleCard(title: "启用水印", isOn: $watermark.enabled)
-
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("水印模板")
-                            .font(.headline)
-                        Text("选择模板后进入编辑页面")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Text("\(WatermarkTemplate.allCases.count + 1) 款")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-
-                LazyVGrid(
-                    columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ],
-                    spacing: 12
-                ) {
-                    ForEach(WatermarkTemplate.allCases, id: \.self) { template in
-                        let isLocked = !proAccess.isProUnlocked && !template.isFree
-                        WatermarkManagementCard(
-                            title: template.title,
-                            summary: template.summary,
-                            isCurrent: watermark.mode == .manual && watermark.template == template,
-                            isLocked: isLocked,
-                            edit: {
-                                openRoute(isLocked ? .pro : .watermarkEditor(.manual(template)))
-                            },
-                            preview: {
-                                WatermarkTemplateSample(template: template)
-                            }
-                        )
-                    }
-
-                    WatermarkManagementCard(
-                        title: "图片水印",
-                        summary: "PNG / Logo / 手写签名",
-                        isCurrent: watermark.mode == .image,
-                        isLocked: !proAccess.isProUnlocked,
-                        edit: {
-                            openRoute(proAccess.isProUnlocked ? .watermarkEditor(.image) : .pro)
-                        },
-                        preview: {
-                            ImageWatermarkTemplateSample(image: watermarkImage)
-                        }
-                    )
-                }
-
-                Label("当前模板会用于拍照和视频模式的实时预览。", systemImage: "info.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 2)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-        }
-        .background(StyleCameraTheme.screenBackground)
-        .navigationTitle("水印")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func watermarkDraft(for target: WatermarkEditorTarget) -> WatermarkPreset {
-        var draft = watermark
-
-        switch target {
-        case let .manual(template):
-            draft.mode = .manual
-            guard draft.template != template else { return draft }
-            draft.template = template
-            draft.position = template.recommendedPosition
-            draft.customPosition = nil
-            draft.visualStyle = template.recommendedVisualStyle
-        case .image:
-            draft.mode = .image
-        }
-
-        return draft
-    }
-
-    private var photoFrameSettingsPage: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                SettingsToggleCard(title: "启用相框", isOn: $photoFrame.enabled)
-
-                if photoFrame.enabled {
-                    SettingsSectionTitle("相框样式")
-                    PhotoFrameStylePicker(
-                        selection: frameStyleBinding,
-                        isProUnlocked: proAccess.isProUnlocked,
-                        requestUpgrade: { openRoute(.pro) }
-                    )
-
-                    SettingsSectionTitle("预览与参数")
-                    PhotoFrameConfigurationView(
-                        previewStore: previewStore,
-                        preset: photoFrame,
-                        borderWidth: frameBorderWidthBinding,
-                        cornerRadius: frameCornerRadiusBinding,
-                        shadowEnabled: $photoFrame.shadowEnabled,
-                        backgroundColor: $photoFrame.backgroundColor
-                    )
-                } else {
-                    SettingsDisabledHint(text: "开启后可选择拍立得、经典留白、上下留白、底部留白或取景框。")
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-        }
-        .background(StyleCameraTheme.screenBackground)
-        .navigationTitle("相框")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
     private var guidanceSettingsPage: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
@@ -2281,417 +2152,7 @@ private struct CameraSettingsView: View {
         )
     }
 
-    private var frameStyleBinding: Binding<PhotoFrameStyle> {
-        Binding(
-            get: { photoFrame.style },
-            set: { newStyle in
-                var updated = photoFrame
-                updated.style = newStyle
-                switch newStyle {
-                case .cleanWhite:
-                    updated.backgroundColor = .white
-                    updated.borderWidth = 24
-                    updated.cornerRadius = 2
-                    updated.shadowEnabled = true
-                case .cleanBlack:
-                    updated.backgroundColor = .white
-                    updated.borderWidth = 24
-                    updated.cornerRadius = 2
-                    updated.shadowEnabled = true
-                case .instant:
-                    updated.backgroundColor = .white
-                    updated.borderWidth = 24
-                    updated.cornerRadius = 0
-                    updated.shadowEnabled = false
-                case .film:
-                    updated.backgroundColor = .white
-                    updated.borderWidth = 24
-                    updated.cornerRadius = 0
-                    updated.shadowEnabled = false
-                case .minimal:
-                    updated.backgroundColor = .white
-                    updated.borderWidth = 24
-                    updated.cornerRadius = 0
-                    updated.shadowEnabled = false
-                }
-                photoFrame = updated
-            }
-        )
-    }
 
-    private var frameBorderWidthBinding: Binding<Double> {
-        Binding(
-            get: { Double(photoFrame.borderWidth) },
-            set: { photoFrame.borderWidth = Float($0) }
-        )
-    }
-
-    private var frameCornerRadiusBinding: Binding<Double> {
-        Binding(
-            get: { Double(photoFrame.cornerRadius) },
-            set: { photoFrame.cornerRadius = Float($0) }
-        )
-    }
-
-    private var watermarkImage: UIImage? {
-        guard let imageData = watermark.imageData else {
-            return nil
-        }
-
-        return UIImage(data: imageData)
-    }
-
-}
-
-private struct WatermarkEditorView: View {
-    let previewStore: CameraPreviewStore
-    let styleName: String
-    let locationText: String?
-    let requestLocation: () -> Void
-    let save: (WatermarkPreset) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var draft: WatermarkPreset
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var imageImportError: String?
-
-    init(
-        initialWatermark: WatermarkPreset,
-        previewStore: CameraPreviewStore,
-        styleName: String,
-        locationText: String?,
-        requestLocation: @escaping () -> Void,
-        save: @escaping (WatermarkPreset) -> Void
-    ) {
-        self.previewStore = previewStore
-        self.styleName = styleName
-        self.locationText = locationText
-        self.requestLocation = requestLocation
-        self.save = save
-        _draft = State(initialValue: initialWatermark)
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .bottom) {
-                WatermarkPreviewView(
-                    previewStore: previewStore,
-                    watermark: draft,
-                    styleName: styleName,
-                    locationText: locationText
-                )
-
-                HStack {
-                    Label("实时效果", systemImage: "circle.fill")
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, StyleCameraTheme.cyan)
-
-                    Spacer()
-
-                    Text(editorSubtitle)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(.black.opacity(0.52), in: Capsule())
-                }
-                .font(.caption)
-                .foregroundStyle(.white)
-                .padding(12)
-                .background(
-                    LinearGradient(
-                        colors: [.clear, .black.opacity(0.58)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 230)
-            .clipped()
-
-            Divider()
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 16) {
-                    WatermarkAdjustmentView(
-                        position: $draft.position,
-                        opacity: opacityBinding,
-                        scale: scaleBinding
-                    )
-
-                    switch draft.mode {
-                    case .manual:
-                        manualControls
-                    case .image:
-                        imageControls
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-            }
-            .scrollIndicators(.hidden)
-        }
-        .background(StyleCameraTheme.screenGradient)
-        .tint(StyleCameraTheme.primary)
-        .preferredColorScheme(.dark)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button(action: dismiss.callAsFunction) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
-                        .frame(width: 32, height: 32)
-                }
-                .accessibilityLabel("关闭")
-            }
-
-            ToolbarItem(placement: .principal) {
-//                Text("编辑水印")
-                Text(editorSubtitle)
-                    .font(.headline)
-            }
-
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: saveDraft) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 16, weight: .bold))
-                        .frame(width: 32, height: 32)
-                }
-                .accessibilityLabel("保存")
-            }
-        }
-    }
-
-    private var editorSubtitle: String {
-        switch draft.mode {
-        case .manual: return draft.template.title
-        case .image: return "图片水印"
-        }
-    }
-
-    @ViewBuilder
-    private var manualControls: some View {
-        SettingsSectionTitle("内容配置")
-
-        SettingsDetailCard {
-            HStack(spacing: 8) {
-                Text("自定义签名")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(width: 76, alignment: .leading)
-
-                TextField("例如：我的旅拍", text: $draft.text)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            Divider()
-
-            SettingsCompactToggle(title: "显示风格", isOn: $draft.includeStyleName)
-            SettingsCompactToggle(title: "显示日期", isOn: $draft.includeDate)
-            SettingsCompactToggle(title: "显示设备", isOn: $draft.includeDevice)
-            SettingsCompactToggle(title: "显示位置", isOn: includeLocationBinding)
-
-            if draft.includeLocation {
-                VStack(alignment: .leading, spacing: 6) {
-                    TextField("位置文字", text: $draft.locationOverrideText)
-                        .textFieldStyle(.roundedBorder)
-                    Text("留空使用当前定位：\(locationText ?? "等待定位")")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-            }
-        }
-
-        SettingsSectionTitle("样式配置")
-
-        SettingsDetailCard {
-            WatermarkTextColorPicker(selection: $draft.textColor)
-
-            Divider()
-
-            WatermarkFontPicker(selection: $draft.font)
-
-            Divider()
-
-            SettingsOptionGrid(
-                title: "字体样式",
-                selection: $draft.visualStyle,
-                options: WatermarkVisualStyle.allCases,
-                label: { $0.title }
-            )
-
-            Divider()
-
-            HStack {
-                Text("阴影效果")
-                Spacer()
-                Picker("阴影效果", selection: $draft.effect) {
-                    ForEach(WatermarkEffect.allCases, id: \.self) { effect in
-                        Text(effect.title).tag(effect)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var imageControls: some View {
-        SettingsSectionTitle("图片水印")
-
-        SettingsDetailCard {
-            HStack(alignment: .top, spacing: 14) {
-                PhotosPicker(
-                    selection: $selectedPhotoItem,
-                    matching: .images,
-                    photoLibrary: .shared()
-                ) {
-                    ZStack {
-                        if let watermarkImage {
-                            Image(uiImage: watermarkImage)
-                                .resizable()
-                                .scaledToFit()
-                                .padding(16)
-                        } else {
-                            VStack(spacing: 10) {
-                                Image(systemName: "photo.badge.plus")
-                                    .font(.system(size: 30, weight: .medium))
-                                Text("尚未上传水印")
-                                    .font(.caption)
-                                Text("从相册选择")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 14)
-                                    .frame(height: 32)
-                                    .background(StyleCameraTheme.primaryGradient, in: Capsule())
-                            }
-                            .foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(width: 132, height: 150)
-                    .background(StyleCameraTheme.elevatedBackground)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color.secondary.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [5]))
-                    }
-                }
-                .buttonStyle(.plain)
-                .task(id: selectedPhotoItem) {
-                    guard let selectedPhotoItem else { return }
-                    await importImage(from: selectedPhotoItem)
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("图片水印")
-                        .font(.subheadline.weight(.semibold))
-                    Text("推荐使用透明背景 PNG，适合签名、Logo 或图形标记。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    if let watermarkImage {
-                        Text("\(Int(watermarkImage.size.width)) x \(Int(watermarkImage.size.height))")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-
-                        Button(role: .destructive) {
-                            draft.imageData = nil
-                            selectedPhotoItem = nil
-                        } label: {
-                            Label("移除图片", systemImage: "trash")
-                                .font(.caption.weight(.semibold))
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-            }
-
-            if let imageImportError {
-                Text(imageImportError)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-        }
-    }
-
-    private var opacityBinding: Binding<Double> {
-        Binding(
-            get: { Double(draft.opacity) },
-            set: { draft.opacity = Float($0) }
-        )
-    }
-
-    private var scaleBinding: Binding<Double> {
-        Binding(
-            get: { Double(draft.watermarkScale) },
-            set: { draft.watermarkScale = Float($0) }
-        )
-    }
-
-    private var includeLocationBinding: Binding<Bool> {
-        Binding(
-            get: { draft.includeLocation },
-            set: { isIncluded in
-                draft.includeLocation = isIncluded
-                if isIncluded {
-                    requestLocation()
-                }
-            }
-        )
-    }
-
-    private var watermarkImage: UIImage? {
-        guard let imageData = draft.imageData else { return nil }
-        return UIImage(data: imageData)
-    }
-
-    private func saveDraft() {
-        save(draft)
-        dismiss()
-    }
-
-    private func importImage(from item: PhotosPickerItem) async {
-        do {
-            guard let data = try await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data),
-                  let pngData = normalizedPNGData(from: image) else {
-                imageImportError = "无法读取这张图片。"
-                return
-            }
-            guard !Task.isCancelled else { return }
-
-            draft.mode = .image
-            draft.imageData = pngData
-            imageImportError = nil
-        } catch is CancellationError {
-            return
-        } catch {
-            imageImportError = "图片导入失败，请重新选择。"
-        }
-    }
-
-    private func normalizedPNGData(from image: UIImage) -> Data? {
-        let pixelWidth = CGFloat(image.cgImage?.width ?? Int(image.size.width * image.scale))
-        let pixelHeight = CGFloat(image.cgImage?.height ?? Int(image.size.height * image.scale))
-        guard pixelWidth > 0, pixelHeight > 0 else { return nil }
-
-        let maximumPixelLength: CGFloat = 1_024
-        let resizeScale = min(1, maximumPixelLength / max(pixelWidth, pixelHeight))
-        let targetSize = CGSize(
-            width: max(1, (pixelWidth * resizeScale).rounded()),
-            height: max(1, (pixelHeight * resizeScale).rounded())
-        )
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        format.opaque = false
-        let normalizedImage = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
-            image.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
-        return normalizedImage.pngData()
-    }
 }
 
 private struct SettingsFeatureCard: View {
@@ -2862,7 +2323,7 @@ private struct ProOverviewCard: View {
                     Text("StyleCamera Pro")
                         .font(.headline)
                         .foregroundStyle(.white)
-                    Text(isUnlocked ? "专业功能已解锁" : "解锁自定义风格、高级模板与 AI 指导")
+                    Text(isUnlocked ? "专业功能已解锁" : "解锁自定义风格与 AI 拍照指导")
                         .font(.caption)
                         .foregroundStyle(StyleCameraTheme.palePink.opacity(0.86))
                         .lineLimit(2)
@@ -3061,131 +2522,6 @@ private struct AddCustomStyleCard: View {
     }
 }
 
-private struct WatermarkManagementCard<Preview: View>: View {
-    let title: String
-    let summary: String
-    let isCurrent: Bool
-    let isLocked: Bool
-    let edit: () -> Void
-    let preview: Preview
-
-    init(
-        title: String,
-        summary: String,
-        isCurrent: Bool,
-        isLocked: Bool = false,
-        edit: @escaping () -> Void,
-        @ViewBuilder preview: () -> Preview
-    ) {
-        self.title = title
-        self.summary = summary
-        self.isCurrent = isCurrent
-        self.isLocked = isLocked
-        self.edit = edit
-        self.preview = preview()
-    }
-
-    var body: some View {
-        Button(action: edit) {
-            VStack(alignment: .leading, spacing: 0) {
-                ZStack(alignment: .topTrailing) {
-                    preview
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 112)
-                        .clipped()
-
-                    if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 28, height: 28)
-                            .background(StyleCameraTheme.primaryGradient, in: Circle())
-                            .padding(8)
-                    } else {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 22, weight: .semibold))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(StyleCameraTheme.primary, Color.white)
-                            .padding(8)
-                            .opacity(isCurrent ? 1 : 0)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(title)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        if isCurrent {
-                            Text("当前")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(StyleCameraTheme.primary)
-                        }
-                    }
-
-                    Text(summary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .padding(10)
-            }
-            .frame(maxWidth: .infinity, minHeight: 166, alignment: .topLeading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(StyleCameraTheme.divider.opacity(0.75), lineWidth: 1)
-                    .opacity(isCurrent ? 0 : 1)
-
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(StyleCameraTheme.styleSelectionBorderGradient, lineWidth: 2)
-                    .shadow(color: StyleCameraTheme.primary.opacity(0.58), radius: 7)
-                    .shadow(color: StyleCameraTheme.accentBlue.opacity(0.32), radius: 11)
-                    .opacity(isCurrent ? 1 : 0)
-            }
-        }
-        .animation(.easeOut(duration: 0.2), value: isCurrent)
-        .accessibilityLabel(isLocked ? "解锁水印模板\(title)" : "编辑水印模板\(title)")
-        .accessibilityAddTraits(isCurrent ? .isSelected : [])
-    }
-}
-
-private struct ImageWatermarkTemplateSample: View {
-    let image: UIImage?
-
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [StyleCameraTheme.deepPurple, StyleCameraTheme.elevatedBackground],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            if let image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(18)
-            } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "photo.badge.plus")
-                        .font(.system(size: 28, weight: .medium))
-                    Text("上传 PNG")
-                        .font(.caption.weight(.semibold))
-                }
-                .foregroundStyle(StyleCameraTheme.palePink)
-            }
-        }
-    }
-}
-
 private struct SettingsToggleCard: View {
     let title: String
     @Binding var isOn: Bool
@@ -3263,171 +2599,6 @@ private struct SettingsDisabledHint: View {
     }
 }
 
-private struct WatermarkTemplateSample: View {
-    let template: WatermarkTemplate
-
-    var body: some View {
-        ZStack(alignment: template.sampleAlignment) {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.28, green: 0.40, blue: 0.52),
-                    Color(red: 0.08, green: 0.13, blue: 0.18)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(Array(template.sampleLines.enumerated()), id: \.offset) { index, line in
-                    Text(line)
-                        .font(template.sampleFont(for: index))
-                        .lineLimit(1)
-                }
-            }
-            .foregroundStyle(template.sampleForegroundColor)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
-            .background(
-                template.sampleBackground,
-                in: RoundedRectangle(cornerRadius: 4, style: .continuous)
-            )
-            .padding(7)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-    }
-}
-
-private struct SettingsCompactToggle: View {
-    let title: String
-    let systemImage: String?
-    @Binding var isOn: Bool
-
-    init(title: String, systemImage: String? = nil, isOn: Binding<Bool>) {
-        self.title = title
-        self.systemImage = systemImage
-        _isOn = isOn
-    }
-
-    var body: some View {
-        Toggle(isOn: $isOn) {
-            HStack(spacing: 9) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 22)
-                }
-                Text(title)
-                    .font(.subheadline)
-            }
-        }
-        .frame(minHeight: 34)
-    }
-}
-
-private struct SettingsSliderRow: View {
-    let title: String
-    let systemImage: String?
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let valueText: String
-
-    init(
-        title: String,
-        systemImage: String? = nil,
-        value: Binding<Double>,
-        range: ClosedRange<Double>,
-        valueText: String
-    ) {
-        self.title = title
-        self.systemImage = systemImage
-        _value = value
-        self.range = range
-        self.valueText = valueText
-    }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 7) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20)
-                }
-                Text(title)
-                    .font(.subheadline)
-                    .lineLimit(1)
-            }
-            .frame(width: systemImage == nil ? 86 : 104, alignment: .leading)
-
-            Button {
-                value = max(range.lowerBound, value - adjustmentStep)
-            } label: {
-                Image(systemName: "minus")
-                    .frame(width: 24, height: 32)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("减小\(title)")
-
-            Slider(value: $value, in: range)
-                .tint(StyleCameraTheme.primary)
-
-            Button {
-                value = min(range.upperBound, value + adjustmentStep)
-            } label: {
-                Image(systemName: "plus")
-                    .frame(width: 24, height: 32)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("增大\(title)")
-
-            Text(valueText)
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .trailing)
-        }
-    }
-
-    private var adjustmentStep: Double {
-        (range.upperBound - range.lowerBound) / 20
-    }
-}
-
-private struct WatermarkPositionMenu: View {
-    @Binding var selection: WatermarkPosition
-
-    var body: some View {
-        Menu {
-            ForEach(WatermarkPosition.allCases, id: \.self) { position in
-                Button {
-                    selection = position
-                } label: {
-                    Label(
-                        position.title,
-                        systemImage: selection == position ? "checkmark" : position.settingsIconName
-                    )
-                }
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: selection.settingsIconName)
-                    .font(.caption.weight(.semibold))
-                Text(selection.title)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                Spacer(minLength: 2)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-            }
-            .foregroundStyle(StyleCameraTheme.primary)
-            .padding(.horizontal, 9)
-            .frame(height: 34)
-            .background(StyleCameraTheme.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-        }
-        .accessibilityLabel("展示位置")
-        .accessibilityValue(selection.title)
-    }
-}
-
 private struct GuidanceToggleRow: View {
     let title: String
     let summary: String
@@ -3456,563 +2627,6 @@ private struct GuidanceToggleRow: View {
         }
         .padding(.vertical, 9)
         .tint(StyleCameraTheme.primary)
-    }
-}
-
-private struct PhotoFrameStylePicker: View {
-    @Binding var selection: PhotoFrameStyle
-    let isProUnlocked: Bool
-    let requestUpgrade: () -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(PhotoFrameStyle.allCases, id: \.self) { style in
-                    let isSelected = style == selection
-                    let isLocked = !isProUnlocked && !style.isFree
-
-                    Button {
-                        if isLocked {
-                            requestUpgrade()
-                        } else {
-                            selection = style
-                        }
-                    } label: {
-                        VStack(spacing: 5) {
-                            PhotoFrameStyleThumbnail(style: style)
-                                .frame(width: 60, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                        .stroke(
-                                            isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider,
-                                            lineWidth: isSelected ? 2 : 1
-                                        )
-                                }
-                                .overlay(alignment: .topTrailing) {
-                                    if isLocked {
-                                        Image(systemName: "lock.fill")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundStyle(.white)
-                                            .frame(width: 20, height: 20)
-                                            .background(StyleCameraTheme.primaryGradient, in: Circle())
-                                            .padding(4)
-                                    }
-                                }
-
-                            Text(style.shortTitle)
-                                .font(.caption)
-                                .fontWeight(isSelected ? .semibold : .regular)
-                                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-                                .frame(width: 64)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isLocked ? "解锁\(style.title)" : "选择\(style.title)")
-                    .accessibilityAddTraits(isSelected ? .isSelected : [])
-                }
-            }
-            .padding(.horizontal, 2)
-        }
-    }
-}
-
-private struct PhotoFrameStyleThumbnail: View {
-    let style: PhotoFrameStyle
-
-    var body: some View {
-        if let image = UIImage(named: style.sampleImageName) {
-            Image(uiImage: image)
-                .resizable()
-                .interpolation(.high)
-                .aspectRatio(3 / 4, contentMode: .fit)
-        } else {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(StyleCameraTheme.elevatedBackground)
-                .overlay {
-                    Image(systemName: "photo")
-                        .foregroundStyle(.secondary)
-                }
-        }
-    }
-}
-
-private struct SettingsOptionGrid<Option: Hashable>: View {
-    let title: String
-    @Binding var selection: Option
-    let options: [Option]
-    let label: (Option) -> String
-
-    private var columns: [GridItem] {
-        [
-            GridItem(.flexible(), spacing: 8),
-            GridItem(.flexible(), spacing: 8)
-        ]
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-
-            LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(options, id: \.self) { option in
-                    optionButton(option)
-                }
-            }
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func optionButton(_ option: Option) -> some View {
-        let isSelected = option == selection
-
-        return Button {
-            selection = option
-        } label: {
-            HStack(spacing: 8) {
-                Text(label(option))
-                    .font(.subheadline)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
-
-                Spacer(minLength: 6)
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-            }
-            .foregroundStyle(isSelected ? Color.primary : Color.secondary)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? StyleCameraTheme.primary.opacity(0.16) : StyleCameraTheme.elevatedBackground)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isSelected ? StyleCameraTheme.primary : StyleCameraTheme.divider, lineWidth: 1)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct WatermarkAdjustmentView: View {
-    @Binding var position: WatermarkPosition
-    @Binding var opacity: Double
-    @Binding var scale: Double
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Text("位置")
-                    .font(.subheadline)
-                    .frame(width: 68, alignment: .leading)
-
-                WatermarkPositionMenu(selection: $position)
-                    .frame(maxWidth: .infinity)
-            }
-
-            Divider()
-
-            CompactWatermarkSlider(
-                title: "透明度",
-                value: $opacity,
-                range: 0.2...1,
-                valueText: "\(Int((opacity * 100).rounded()))%"
-            )
-
-            Divider()
-
-            CompactWatermarkSlider(
-                title: "水印大小",
-                value: $scale,
-                range: 0.5...2,
-                valueText: "\(Int((scale * 100).rounded()))%"
-            )
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(StyleCameraTheme.panelBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(StyleCameraTheme.divider.opacity(0.58), lineWidth: 1)
-        }
-    }
-}
-
-private struct CompactWatermarkSlider: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let valueText: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.subheadline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(width: 68, alignment: .leading)
-
-            Slider(value: $value, in: range)
-                .tint(StyleCameraTheme.primary)
-
-            Text(valueText)
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .trailing)
-        }
-    }
-}
-
-private struct WatermarkPreviewView: View {
-    @ObservedObject var previewStore: CameraPreviewStore
-    let watermark: WatermarkPreset
-    let styleName: String
-    let locationText: String?
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                previewBackground
-
-                previewWatermark
-                    .position(anchorPoint(in: proxy.size))
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private var previewBackground: some View {
-        if let image = previewStore.image {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-        } else {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.52, green: 0.60, blue: 0.62),
-                    Color(red: 0.22, green: 0.18, blue: 0.15),
-                    Color(red: 0.72, green: 0.66, blue: 0.50)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var previewWatermark: some View {
-        switch watermark.mode {
-        case .manual:
-            if !previewText.isEmpty {
-                WatermarkTemplateTextView(
-                    text: previewText,
-                    template: watermark.template,
-                    baseFont: previewFont,
-                    compact: true
-                )
-                    .foregroundStyle(foregroundColor)
-                    .lineLimit(6)
-                    .multilineTextAlignment(watermark.template == .signature ? .center : .leading)
-                    .padding(.horizontal, horizontalPadding)
-                    .padding(.vertical, verticalPadding)
-                    .background(backgroundShape)
-                    .shadow(color: effectColor, radius: effectRadius, x: 0, y: effectYOffset)
-            }
-        case .image:
-            if let watermarkImage {
-                Image(uiImage: watermarkImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(
-                        width: max(
-                            32,
-                            160 * CGFloat(watermark.imageScale) * CGFloat(watermark.watermarkScale)
-                        )
-                    )
-                    .opacity(Double(watermark.opacity))
-                    .shadow(color: effectColor, radius: effectRadius, x: 0, y: effectYOffset)
-            } else {
-                Text("未选择 PNG")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.72))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(.black.opacity(0.34), in: Capsule())
-            }
-        }
-    }
-
-    private var previewText: String {
-        watermark.displayText(
-            styleName: styleName,
-            deviceName: "iPhone 15 Pro",
-            locationText: locationText ?? "当前位置",
-            dateText: "2026.07.05",
-            weekdayText: "星期六"
-        )
-    }
-
-    private var watermarkImage: UIImage? {
-        guard let imageData = watermark.imageData else {
-            return nil
-        }
-
-        return UIImage(data: imageData)
-    }
-
-    private var configuredAnchor: CGPoint {
-        switch watermark.position {
-        case .topLeft:
-            return CGPoint(x: 0.22, y: 0.18)
-        case .topRight:
-            return CGPoint(x: 0.78, y: 0.18)
-        case .bottomLeft:
-            return CGPoint(x: 0.22, y: 0.72)
-        case .bottomRight:
-            return CGPoint(x: 0.78, y: 0.72)
-        case .bottomCenter:
-            return CGPoint(x: 0.5, y: 0.72)
-        case .bottom:
-            return CGPoint(x: 0.5, y: 0.82)
-        case .custom:
-            let custom = watermark.customPosition ?? WatermarkAnchor(x: 0.5, y: 0.72)
-            return CGPoint(x: CGFloat(custom.x), y: CGFloat(custom.y))
-        }
-    }
-
-    private func anchorPoint(in size: CGSize) -> CGPoint {
-        let anchor = configuredAnchor
-        return CGPoint(
-            x: max(50, min(size.width - 50, anchor.x * size.width)),
-            y: max(24, min(size.height - 40, anchor.y * size.height))
-        )
-    }
-
-    private var previewFont: Font {
-        let scale = CGFloat(watermark.watermarkScale)
-        switch watermark.visualStyle {
-        case .film:
-            return watermark.font.swiftUIFont(size: 13 * scale, weight: .medium)
-        case .darkBadge, .lightBadge:
-            return watermark.font.swiftUIFont(size: 14 * scale, weight: .semibold)
-        case .minimal:
-            return watermark.font.swiftUIFont(size: 14 * scale, weight: .medium)
-        }
-    }
-
-    private var foregroundColor: Color {
-        let alpha = Double(watermark.opacity)
-        switch watermark.visualStyle {
-        case .minimal, .darkBadge:
-            return watermark.textColor.previewColor(fallback: .white, opacity: alpha)
-        case .lightBadge:
-            return watermark.textColor.previewColor(fallback: .black, opacity: alpha * 0.76)
-        case .film:
-            return watermark.textColor.previewColor(
-                fallback: Color(red: 1.0, green: 0.88, blue: 0.36),
-                opacity: alpha
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var backgroundShape: some View {
-        switch watermark.visualStyle {
-        case .minimal:
-            Color.clear
-        case .darkBadge:
-            if watermark.template == .signature {
-                Capsule().fill(.black.opacity(Double(watermark.opacity) * 0.46))
-            } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.black.opacity(Double(watermark.opacity) * 0.46))
-            }
-        case .lightBadge:
-            if watermark.template == .signature {
-                Capsule().fill(.white.opacity(Double(watermark.opacity) * 0.72))
-            } else {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(.white.opacity(Double(watermark.opacity) * 0.72))
-            }
-        case .film:
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.black.opacity(Double(watermark.opacity) * 0.58))
-        }
-    }
-
-    private var horizontalPadding: CGFloat {
-        watermark.visualStyle == .minimal ? 0 : 12 * CGFloat(watermark.watermarkScale)
-    }
-
-    private var verticalPadding: CGFloat {
-        watermark.visualStyle == .minimal ? 0 : 7 * CGFloat(watermark.watermarkScale)
-    }
-
-    private var effectColor: Color {
-        switch watermark.effect {
-        case .none: return .clear
-        case .shadow: return .black.opacity(Double(watermark.opacity) * 0.48)
-        case .glow: return .white.opacity(Double(watermark.opacity) * 0.64)
-        }
-    }
-
-    private var effectRadius: CGFloat {
-        switch watermark.effect {
-        case .none: return 0
-        case .shadow: return 8
-        case .glow: return 14
-        }
-    }
-
-    private var effectYOffset: CGFloat {
-        watermark.effect == .shadow ? 2 : 0
-    }
-}
-
-private struct PhotoFrameConfigurationView: View {
-    @ObservedObject var previewStore: CameraPreviewStore
-    let preset: PhotoFramePreset
-    @Binding var borderWidth: Double
-    @Binding var cornerRadius: Double
-    @Binding var shadowEnabled: Bool
-    @Binding var backgroundColor: PhotoFrameBackgroundColor
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            PhotoFramePreviewView(previewStore: previewStore, preset: preset)
-                .frame(width: 104)
-
-            VStack(alignment: .leading, spacing: 8) {
-                CompactFrameSlider(
-                    title: "边框",
-                    value: $borderWidth,
-                    range: 4...40
-                )
-
-                CompactFrameSlider(
-                    title: "圆角",
-                    value: $cornerRadius,
-                    range: 0...30
-                )
-
-                Toggle(isOn: $shadowEnabled) {
-                    Text("阴影")
-                        .font(.caption)
-                }
-                .tint(StyleCameraTheme.primary)
-
-                HStack(spacing: 6) {
-                    Text("颜色")
-                        .font(.caption)
-                        .frame(width: 30, alignment: .leading)
-
-                    ForEach(PhotoFrameBackgroundColor.allCases, id: \.self) { color in
-                        Button {
-                            backgroundColor = color
-                        } label: {
-                            Circle()
-                                .fill(color.color)
-                                .frame(width: 24, height: 24)
-                                .overlay {
-                                    Circle()
-                                        .stroke(
-                                            backgroundColor == color
-                                                ? StyleCameraTheme.primary
-                                                : StyleCameraTheme.divider,
-                                            lineWidth: backgroundColor == color ? 2 : 1
-                                        )
-                                }
-                                .padding(2)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("选择\(color.title)")
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(12)
-        .background(StyleCameraTheme.elevatedBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(StyleCameraTheme.divider, lineWidth: 1)
-        }
-    }
-}
-
-private struct CompactFrameSlider: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .frame(width: 30, alignment: .leading)
-
-            Slider(value: $value, in: range)
-                .tint(StyleCameraTheme.primary)
-
-            Text("\(Int(value.rounded()))")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 24, alignment: .trailing)
-        }
-    }
-}
-
-private struct PhotoFramePreviewView: View {
-    @ObservedObject var previewStore: CameraPreviewStore
-    let preset: PhotoFramePreset
-
-    var body: some View {
-        ZStack {
-            previewBackground
-
-            LiveFrameOverlayView(preset: preset)
-        }
-        .aspectRatio(3 / 4, contentMode: .fit)
-        .background(frameBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(StyleCameraTheme.divider, lineWidth: 1)
-        }
-    }
-
-    @ViewBuilder
-    private var previewBackground: some View {
-        if let image = previewStore.image {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-        } else {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.72, green: 0.84, blue: 0.90),
-                    Color(red: 0.72, green: 0.42, blue: 0.22),
-                    Color(red: 0.12, green: 0.13, blue: 0.16)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-
-    private var frameBackground: Color {
-        preset.backgroundColor.color.opacity(Double(preset.opacity))
     }
 }
 
@@ -4096,304 +2710,6 @@ private struct GuidancePreviewChip: View {
     }
 }
 
-private extension WatermarkMode {
-    var title: String {
-        switch self {
-        case .manual: return "手动配置"
-        case .image: return "PNG 图片"
-        }
-    }
-}
-
-private extension WatermarkTemplate {
-    var isFree: Bool {
-        self == .signature || self == .travelCard
-    }
-
-    var title: String {
-        switch self {
-        case .signature: return "简约签名"
-        case .travelCard: return "旅拍卡片"
-        case .dateStamp: return "日期印记"
-        case .locationCard: return "地点标签"
-        case .stacked: return "三行故事"
-        case .centeredTravel: return "居中旅拍"
-        case .weekdayQuote: return "星期语录"
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .signature: return "单行简约"
-        case .travelCard: return "旅行信息卡"
-        case .dateStamp: return "日期优先"
-        case .locationCard: return "地点优先"
-        case .stacked: return "分层排列"
-        case .centeredTravel: return "标题居中"
-        case .weekdayQuote: return "日期与语录"
-        }
-    }
-
-    var recommendedPosition: WatermarkPosition {
-        switch self {
-        case .signature: return .bottomRight
-        case .travelCard: return .bottomLeft
-        case .dateStamp: return .topLeft
-        case .locationCard: return .bottomCenter
-        case .stacked: return .topRight
-        case .centeredTravel: return .bottomCenter
-        case .weekdayQuote: return .bottomLeft
-        }
-    }
-
-    var recommendedVisualStyle: WatermarkVisualStyle {
-        switch self {
-        case .signature: return .minimal
-        case .travelCard, .stacked: return .darkBadge
-        case .dateStamp: return .film
-        case .locationCard, .centeredTravel, .weekdayQuote: return .lightBadge
-        }
-    }
-
-    var sampleAlignment: Alignment {
-        switch recommendedPosition {
-        case .topLeft: return .topLeading
-        case .topRight: return .topTrailing
-        case .bottomLeft: return .bottomLeading
-        case .bottomRight: return .bottomTrailing
-        case .bottomCenter: return .bottom
-        case .bottom: return .bottom
-        case .custom: return .center
-        }
-    }
-
-    var sampleLines: [String] {
-        switch self {
-        case .signature:
-            return ["我的旅拍 · 清新"]
-        case .travelCard:
-            return ["▣ 我的旅拍  清新", "2026.07.05 | 杭州"]
-        case .dateStamp:
-            return ["2026.07.05", "我的旅拍 · 清新"]
-        case .locationCard:
-            return ["杭州 · 西湖", "我的旅拍 · 清新"]
-        case .stacked:
-            return ["我的旅拍", "清新 · 杭州", "2026.07.05"]
-        case .centeredTravel:
-            return ["— 我的旅拍 —", "中国 · 北京", "2026-07-30"]
-        case .weekdayQuote:
-            return ["星期六", "2026/07/30", "────", "勇往直前 不畏艰险"]
-        }
-    }
-
-    var sampleForegroundColor: Color {
-        recommendedVisualStyle == .lightBadge ? .black.opacity(0.78) : .white.opacity(0.92)
-    }
-
-    func sampleFont(for index: Int) -> Font {
-        switch self {
-        case .centeredTravel:
-            return index == 0 ? .caption.weight(.semibold) : .system(size: 8)
-        case .weekdayQuote:
-            switch index {
-            case 0: return .system(size: 13, weight: .medium, design: .serif)
-            case 1: return .system(size: 8, weight: .bold, design: .serif)
-            case 2: return .system(size: 6, design: .monospaced)
-            default: return .system(size: 8 )
-            }
-        case .dateStamp:
-            return .caption2.monospaced()
-        default:
-            return .caption2
-        }
-    }
-
-    var sampleBackground: AnyShapeStyle {
-        switch recommendedVisualStyle {
-        case .minimal:
-            return AnyShapeStyle(Color.clear)
-        case .darkBadge:
-            return AnyShapeStyle(Color.black.opacity(0.52))
-        case .lightBadge:
-            return AnyShapeStyle(Color.white.opacity(0.76))
-        case .film:
-            return AnyShapeStyle(Color.black.opacity(0.62))
-        }
-    }
-}
-
-private extension WatermarkPosition {
-    var title: String {
-        switch self {
-        case .topLeft: return "左上"
-        case .topRight: return "右上"
-        case .bottomLeft: return "左下"
-        case .bottomRight: return "右下"
-        case .bottomCenter: return "底部居中"
-        case .bottom: return "底部留白"
-        case .custom: return "自由拖动"
-        }
-    }
-
-    var settingsIconName: String {
-        switch self {
-        case .topLeft: return "arrow.up.left"
-        case .topRight: return "arrow.up.right"
-        case .bottomLeft: return "arrow.down.left"
-        case .bottomRight: return "arrow.down.right"
-        case .bottomCenter: return "arrow.down.to.line.compact"
-        case .bottom: return "rectangle.bottomhalf.inset.filled"
-        case .custom: return "move.3d"
-        }
-    }
-}
-
-private extension PhotoFrameStyle {
-    var isFree: Bool {
-        self == .cleanWhite || self == .cleanBlack
-    }
-
-    var title: String {
-        switch self {
-        case .cleanWhite: return "拍立得留白"
-        case .cleanBlack: return "经典白边"
-        case .instant: return "上下留白"
-        case .film: return "底部留白"
-        case .minimal: return "取景框"
-        }
-    }
-
-    var shortTitle: String {
-        switch self {
-        case .cleanWhite: return "拍立得"
-        case .cleanBlack: return "经典"
-        case .instant: return "上下"
-        case .film: return "底部"
-        case .minimal: return "取景框"
-        }
-    }
-
-    var sampleImageName: String {
-        switch self {
-        case .cleanWhite: return "frame-style-1"
-        case .cleanBlack: return "frame-style-2"
-        case .instant: return "frame-style-3"
-        case .film: return "frame-style-4"
-        case .minimal: return "frame-style-5"
-        }
-    }
-}
-
-private extension PhotoFrameBackgroundColor {
-    var title: String {
-        switch self {
-        case .white: return "白色"
-        case .lightGray: return "浅灰"
-        case .black: return "黑色"
-        case .cream: return "奶油"
-        case .pink: return "粉色"
-        case .mint: return "薄荷"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .white: return Color(
-            red: 254 / 255,
-            green: 254 / 255,
-            blue: 254 / 255
-        )
-        case .lightGray: return Color(
-            red: 249 / 255,
-            green: 244 / 255,
-            blue: 237 / 255
-        )
-        case .black: return Color(white: 0.03)
-        case .cream: return Color(
-            red: 254 / 255,
-            green: 236 / 255,
-            blue: 222 / 255
-        )
-        case .pink: return Color(
-            red: 253 / 255,
-            green: 204 / 255,
-            blue: 203 / 255
-        )
-        case .mint: return Color(
-            red: 162 / 255,
-            green: 213 / 255,
-            blue: 192 / 255
-        )
-        }
-    }
-}
-
-private extension WatermarkVisualStyle {
-    var title: String {
-        switch self {
-        case .minimal: return "简约文字"
-        case .darkBadge: return "深色标签"
-        case .lightBadge: return "浅色标签"
-        case .film: return "胶片"
-        }
-    }
-}
-
-private extension WatermarkTextColor {
-    var title: String {
-        switch self {
-        case .automatic: return "自动"
-        case .white: return "白色"
-        case .black: return "黑色"
-        case .yellow: return "黄色"
-        case .orange: return "橙色"
-        case .blue: return "蓝色"
-        case .pink: return "粉色"
-        }
-    }
-
-    var swatchColor: Color {
-        switch self {
-        case .automatic: return .clear
-        case .white: return .white
-        case .black: return .black
-        case .yellow: return Color(red: 1.0, green: 0.86, blue: 0.12)
-        case .orange: return Color(red: 1.0, green: 0.48, blue: 0.16)
-        case .blue: return Color(red: 0.36, green: 0.64, blue: 1.0)
-        case .pink: return Color(red: 1.0, green: 0.48, blue: 0.72)
-        }
-    }
-
-    func previewColor(fallback: Color, opacity: Double) -> Color {
-        switch self {
-        case .automatic:
-            return fallback.opacity(opacity)
-        case .white:
-            return Color.white.opacity(opacity)
-        case .black:
-            return Color.black.opacity(opacity)
-        case .yellow:
-            return Color(red: 1.0, green: 0.86, blue: 0.12).opacity(opacity)
-        case .orange:
-            return Color(red: 1.0, green: 0.48, blue: 0.16).opacity(opacity)
-        case .blue:
-            return Color(red: 0.36, green: 0.64, blue: 1.0).opacity(opacity)
-        case .pink:
-            return Color(red: 1.0, green: 0.48, blue: 0.72).opacity(opacity)
-        }
-    }
-}
-
-private extension WatermarkEffect {
-    var title: String {
-        switch self {
-        case .none: return "无"
-        case .shadow: return "阴影"
-        case .glow: return "柔光"
-        }
-    }
-}
-
 private extension PhotoGuidanceIntensity {
     var title: String {
         switch self {
@@ -4401,206 +2717,6 @@ private extension PhotoGuidanceIntensity {
         case .standard: return "中等"
         case .active: return "高"
         }
-    }
-}
-
-private struct WatermarkTextColorPicker: View {
-    @Binding var selection: WatermarkTextColor
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Text("颜色")
-                .frame(width: 60, alignment: .leading)
-
-            HStack(spacing: 6) {
-                ForEach(WatermarkTextColor.allCases, id: \.self) { color in
-                    Button {
-                        selection = color
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(.secondary.opacity(0.12))
-                                .frame(width: 34, height: 34)
-
-                            if color == .automatic {
-                                Text("A")
-                                    .font(.system(size: 15, weight: .bold))
-                                    .foregroundStyle(.primary)
-                            } else {
-                                Circle()
-                                    .fill(color.swatchColor)
-                                    .frame(width: 22, height: 22)
-                                    .overlay {
-                                        Circle()
-                                            .stroke(.black.opacity(color == .white ? 0.18 : 0), lineWidth: 1)
-                                    }
-                            }
-
-                            if selection == color {
-                                Circle()
-                                    .stroke(StyleCameraTheme.primary, lineWidth: 2)
-                                    .frame(width: 34, height: 34)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(color.title)
-                }
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-private struct WatermarkFontPicker: View {
-    @Binding var selection: WatermarkFont
-    @State private var isShowingFontList = false
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text("字体")
-                .frame(width: 60, alignment: .leading)
-
-            Spacer()
-
-            Button {
-                isShowingFontList = true
-            } label: {
-                HStack(spacing: 6) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(selection.displayName)
-                            .font(selection.swiftUIFont(size: 13, weight: .medium))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-
-                        Text(selection.styleTag)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(StyleCameraTheme.elevatedBackground)
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(StyleCameraTheme.divider, lineWidth: 1)
-                }
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, 4)
-        .sheet(isPresented: $isShowingFontList) {
-            WatermarkFontListView(
-                selection: $selection,
-                close: { isShowingFontList = false }
-            )
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-        }
-    }
-}
-
-private struct WatermarkFontListView: View {
-    @Binding var selection: WatermarkFont
-    let close: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(WatermarkFont.allCases, id: \.self) { fontOption in
-                        Button {
-                            selection = fontOption
-                            close()
-                        } label: {
-                            HStack(spacing: 12) {
-                                VStack(alignment: .leading, spacing: 7) {
-                                    Text(fontOption.displayName)
-                                        .font(fontOption.swiftUIFont(size: 19, weight: .medium))
-                                        .foregroundStyle(.primary)
-                                        .fixedSize(horizontal: false, vertical: true)
-
-                                    Text("回声影像 · 2026.08.06 · Singapore")
-                                        .font(fontOption.swiftUIFont(size: 14, weight: .regular))
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-
-                                    Text(fontOption.styleTag)
-                                        .font(.caption2)
-                                        .foregroundStyle(StyleCameraTheme.primary)
-                                }
-
-                                Spacer(minLength: 8)
-
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 21, weight: .semibold))
-                                    .symbolRenderingMode(.palette)
-                                    .foregroundStyle(StyleCameraTheme.primary, Color.white)
-                                    .opacity(selection == fontOption ? 1 : 0)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 13)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("选择\(fontOption.displayName)")
-                        .accessibilityAddTraits(selection == fontOption ? .isSelected : [])
-
-                        if fontOption != WatermarkFont.allCases.last {
-                            Divider()
-                                .padding(.leading, 16)
-                        }
-                    }
-                }
-            }
-            .background(StyleCameraTheme.screenBackground)
-            .navigationTitle("字体")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完成", action: close)
-                }
-            }
-            .tint(StyleCameraTheme.primary)
-            .preferredColorScheme(.dark)
-        }
-    }
-}
-
-private struct WatermarkToggleButton: View {
-    let isOn: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Image(systemName: "textformat")
-                    .font(.system(size: 20, weight: .semibold))
-
-                if !isOn {
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(.white.opacity(0.88))
-                        .frame(width: 26, height: 2)
-                        .rotationEffect(.degrees(-34))
-                }
-
-                Circle()
-                    .fill(isOn ? StyleCameraTheme.primary : .white.opacity(0.58))
-                    .frame(width: 5, height: 5)
-                    .offset(x: 13, y: -12)
-            }
-            .foregroundStyle(isOn ? StyleCameraTheme.primary : .white.opacity(0.78))
-            .frame(width: 30, height: 30)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(isOn ? "关闭水印" : "开启水印")
     }
 }
 

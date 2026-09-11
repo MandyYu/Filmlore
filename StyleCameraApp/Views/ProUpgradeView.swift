@@ -5,8 +5,8 @@ struct ProUpgradeView: View {
 
     private let benefits = [
         ProBenefit(icon: "camera.filters", title: "无限自定义风格", detail: "编辑参数并保存属于你的拍摄风格"),
-        ProBenefit(icon: "signature", title: "高级水印模板", detail: "使用更多版式、字体和图片水印"),
-        ProBenefit(icon: "photo.on.rectangle.angled", title: "高级相框模板", detail: "解锁更多相框样式和细节调整"),
+        ProBenefit(icon: "slider.horizontal.3", title: "精细风格调整", detail: "调节曝光、色彩、锐度和胶片质感"),
+        ProBenefit(icon: "square.stack.3d.up", title: "专业拍摄模板", detail: "解锁更多版式留白与拍摄信息组合"),
         ProBenefit(icon: "viewfinder", title: "AI 拍照指导", detail: "获得构图、水平、光线和清晰度提醒")
     ]
 

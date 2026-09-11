@@ -6,6 +6,9 @@ public enum CameraTemplateCategory: String, Codable, CaseIterable, Identifiable,
     case colorWalk
     case frames
     case personal
+    case minimalFrame
+    case personalFrame
+    case seasonalFrame
 
     public var id: String { rawValue }
 
@@ -15,6 +18,9 @@ public enum CameraTemplateCategory: String, Codable, CaseIterable, Identifiable,
         case .colorWalk: return "Color walk"
         case .frames: return "相框"
         case .personal: return "个人水印"
+        case .minimalFrame: return "极简边框"
+        case .personalFrame: return "个人边框"
+        case .seasonalFrame: return "时节边框"
         }
     }
 }
@@ -102,6 +108,8 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
     public var customText: String
     public var fontScale: Float
     public var textColor: WatermarkTextColor
+    public var customTextColorHex: String
+    public var font: WatermarkFont?
 
     public init(
         type: CameraTemplateSlotType = .none,
@@ -109,7 +117,9 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
         textSource: CameraTemplateTextSource = .custom,
         customText: String = "",
         fontScale: Float = 1,
-        textColor: WatermarkTextColor = .automatic
+        textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
+        font: WatermarkFont? = nil
     ) {
         self.type = type
         self.iconName = iconName
@@ -117,6 +127,8 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
         self.customText = customText
         self.fontScale = min(2.5, max(0.5, fontScale))
         self.textColor = textColor
+        self.customTextColorHex = customTextColorHex
+        self.font = font
     }
 
     public static var empty: CameraTemplateSlot {
@@ -126,44 +138,68 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
     public static func icon(
         _ name: String,
         fontScale: Float = 1,
-        textColor: WatermarkTextColor = .automatic
+        textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
+        font: WatermarkFont? = nil
     ) -> CameraTemplateSlot {
         CameraTemplateSlot(
             type: .icon,
             iconName: name,
             fontScale: fontScale,
-            textColor: textColor
+            textColor: textColor,
+            customTextColorHex: customTextColorHex,
+            font: font
         )
     }
 
     public static func cityIcon(
         _ city: CityIconName,
         fontScale: Float = 1,
-        textColor: WatermarkTextColor = .automatic
+        textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
+        font: WatermarkFont? = nil
     ) -> CameraTemplateSlot {
-        icon(city.assetName, fontScale: fontScale, textColor: textColor)
+        icon(
+            city.assetName,
+            fontScale: fontScale,
+            textColor: textColor,
+            customTextColorHex: customTextColorHex,
+            font: font
+        )
     }
 
     public static func icon(
         _ city: CityIconName,
         fontScale: Float = 1,
-        textColor: WatermarkTextColor = .automatic
+        textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
+        font: WatermarkFont? = nil
     ) -> CameraTemplateSlot {
-        cityIcon(city, fontScale: fontScale, textColor: textColor)
+        cityIcon(
+            city,
+            fontScale: fontScale,
+            textColor: textColor,
+            customTextColorHex: customTextColorHex,
+            font: font
+        )
     }
 
     public static func text(
         _ source: CameraTemplateTextSource,
         customText: String = "",
         fontScale: Float = 1,
-        textColor: WatermarkTextColor = .automatic
+        textColor: WatermarkTextColor = .automatic,
+        customTextColorHex: String = "#FFFFFF",
+        font: WatermarkFont? = nil
     ) -> CameraTemplateSlot {
         CameraTemplateSlot(
             type: .text,
             textSource: source,
             customText: customText,
             fontScale: fontScale,
-            textColor: textColor
+            textColor: textColor,
+            customTextColorHex: customTextColorHex,
+            font: font
         )
     }
 
@@ -174,6 +210,8 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
         case customText
         case fontScale
         case textColor
+        case customTextColorHex
+        case font
     }
 
     public init(from decoder: Decoder) throws {
@@ -185,6 +223,8 @@ public struct CameraTemplateSlot: Codable, Equatable, Sendable {
         let decodedScale = try container.decodeIfPresent(Float.self, forKey: .fontScale) ?? 1
         fontScale = min(2.5, max(0.5, decodedScale))
         textColor = try container.decodeIfPresent(WatermarkTextColor.self, forKey: .textColor) ?? .automatic
+        customTextColorHex = try container.decodeIfPresent(String.self, forKey: .customTextColorHex) ?? "#FFFFFF"
+        font = try container.decodeIfPresent(WatermarkFont.self, forKey: .font)
     }
 }
 
@@ -478,6 +518,44 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
 public enum BuiltInCameraTemplates {
     public static let all: [CameraTemplatePreset] = [
         CameraTemplatePreset(
+            id: "minimal-travel",
+            name: "旅拍记录",
+            summary: "日期、设备与地点",
+            category: .minimalFrame,
+            watermark: WatermarkPreset(
+                enabled: true,
+                text: "我的旅拍",
+                position: .bottom,
+                opacity: 0.84,
+                watermarkScale: 0.9,
+                template: .travelCard,
+                includeDate: true,
+                includeDevice: true,
+                includeStyleName: true,
+                includeLocation: true,
+                textColor: .black,
+                font: .sourceHanSans,
+                visualStyle: .darkBadge,
+                effect: .none
+            ),
+            photoFrame: PhotoFramePreset(
+                enabled: true,
+                cornerRadius: 0,
+                shadowEnabled: false,
+                baseInsets : UIEdgeInsets(
+                     top: 20,
+                     left: 20,
+                     bottom: 20,
+                     right: 20
+                 )
+            ),
+            insetContent: CameraTemplateInsetContent(
+                
+                center: .single(.text(.signature)),
+                
+            )
+        ),
+        CameraTemplatePreset(
             id: "classic-travel",
             name: "旅拍记录",
             summary: "日期、设备与地点",
@@ -507,7 +585,8 @@ public enum BuiltInCameraTemplates {
                      left: 0,
                      bottom: 100,
                      right: 0
-                 )),
+                 )
+            ),
             insetContent: CameraTemplateInsetContent(
                 left: .single(.icon(
                     .beijing,

@@ -23,7 +23,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>用于拍摄带风格滤镜的照片。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>用于在照片水印中显示拍摄位置。</string>
+	<string>用于在所选模板中显示拍摄地点。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>用于将拍摄后的照片保存到系统相册。</string>
 	<key>NSPhotoLibraryUsageDescription</key>

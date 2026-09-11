@@ -493,6 +493,9 @@ final class WatermarkRenderer {
         fontSize: CGFloat
     ) -> [NSAttributedString.Key: Any] {
         var attributes = textAttributes(for: preset, fontSize: fontSize)
+        if let font = item.font {
+            attributes[.font] = font.uiFont(size: fontSize, weight: .semibold)
+        }
         guard item.textColor != .automatic else { return attributes }
 
         let alpha = CGFloat(preset.opacity)
@@ -512,6 +515,11 @@ final class WatermarkRenderer {
             color = UIColor(red: 0.36, green: 0.64, blue: 1, alpha: alpha)
         case .pink:
             color = UIColor(red: 1, green: 0.48, blue: 0.72, alpha: alpha)
+        case .custom:
+            color = Self.customColor(
+                hex: item.customTextColorHex,
+                fallback: .white
+            ).withAlphaComponent(alpha)
         }
         attributes[.foregroundColor] = color
         return attributes
@@ -649,9 +657,27 @@ final class WatermarkRenderer {
             baseColor = UIColor(red: 0.36, green: 0.64, blue: 1.0, alpha: 1)
         case .pink:
             baseColor = UIColor(red: 1.0, green: 0.48, blue: 0.72, alpha: 1)
+        case .custom:
+            baseColor = customColor(hex: preset.customTextColorHex, fallback: fallback)
         }
 
         return baseColor.withAlphaComponent(CGFloat(preset.opacity) * alphaMultiplier)
+    }
+
+    private static func customColor(hex: String, fallback: UIColor) -> UIColor {
+        let value = hex
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "#", with: "")
+        guard value.count == 6, let rgb = UInt64(value, radix: 16) else {
+            return fallback
+        }
+
+        return UIColor(
+            red: CGFloat((rgb >> 16) & 0xFF) / 255,
+            green: CGFloat((rgb >> 8) & 0xFF) / 255,
+            blue: CGFloat(rgb & 0xFF) / 255,
+            alpha: 1
+        )
     }
 
     private static func horizontalPadding(for preset: WatermarkPreset, fontSize: CGFloat) -> CGFloat {
@@ -1092,6 +1118,8 @@ public extension WatermarkFont {
             candidates = ["ZCOOLXiaoWei-Regular", "STHeitiSC-Light", "PingFangSC-Thin"]
         case .zcoolKuaiLe:
             candidates = ["ZCOOLKuaiLe-Regular", "Yuanti SC", "ArialRoundedMTBold"]
+        case .dianZiJueJiangHei:
+            candidates = ["IDJueJiangHei", "点字倔强黑", "PingFangSC-Heavy"]
         case .caveat:
             candidates = ["Caveat", "Caveat-Regular", "SnellRoundhand", "Bradley Hand"]
         case .bebasNeue:
@@ -1121,6 +1149,8 @@ public extension WatermarkFont {
             return .systemFont(ofSize: size, weight: .ultraLight)
         case .zcoolKuaiLe:
             return .systemFont(ofSize: size, weight: .bold)
+        case .dianZiJueJiangHei:
+            return .systemFont(ofSize: size, weight: .heavy)
         case .caveat:
             return .italicSystemFont(ofSize: size)
         case .bebasNeue:
@@ -1147,6 +1177,8 @@ public extension WatermarkFont {
             candidates = ["ZCOOLXiaoWei-Regular", "STHeitiSC-Light", "PingFangSC-Thin"]
         case .zcoolKuaiLe:
             candidates = ["ZCOOLKuaiLe-Regular", "Yuanti SC", "ArialRoundedMTBold"]
+        case .dianZiJueJiangHei:
+            candidates = ["IDJueJiangHei", "点字倔强黑", "PingFangSC-Heavy"]
         case .caveat:
             candidates = ["Caveat", "Caveat-Regular", "SnellRoundhand", "Bradley Hand"]
         case .bebasNeue:
@@ -1176,6 +1208,8 @@ public extension WatermarkFont {
             return .system(size: size, weight: .ultraLight, design: .serif)
         case .zcoolKuaiLe:
             return .system(size: size, weight: .bold, design: .rounded)
+        case .dianZiJueJiangHei:
+            return .system(size: size, weight: .heavy, design: .default)
         case .caveat:
             return .system(size: size, weight: weight, design: .serif).italic()
         case .bebasNeue:

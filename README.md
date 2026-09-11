@@ -10,7 +10,7 @@ An iPhone-style real-time filter camera prototype built from `iphone_style_camer
 - Core style model, built-in presets, style selection model, and Core Image style renderer.
 - Four main built-in style formulas are set from the supplied reference images: `冷白皮风`, `城市质感风`, `食物 ins 风`, and `富士清新风`.
 - AVFoundation camera engine with preview frames and high-quality photo capture.
-- PhotoKit saving and a first-pass text/date/style watermark renderer.
+- PhotoKit saving with processed style output, capture-aspect-ratio cropping, and template-specific inset/content composition.
 - A SwiftPM check executable for core presets, parameter clamping, selection wrapping, and renderer extent preservation.
 
 ## Open In Xcode
