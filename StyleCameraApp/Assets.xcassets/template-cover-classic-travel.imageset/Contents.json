@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "classic-travel.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

@@ -20,6 +20,23 @@ public struct StylePreset: Codable, Identifiable, Equatable, Sendable {
     }
 }
 
+/// 普通文字水印中附加的信息，可组合使用；不控制模板中显式声明的字段。
+public struct WatermarkContentFields: OptionSet, Sendable {
+    public let rawValue: Int
+
+    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }
+
+    public static let date = Self(rawValue: 1 << 0)
+    public static let device = Self(rawValue: 1 << 1)
+    public static let styleName = Self(rawValue: 1 << 2)
+    public static let location = Self(rawValue: 1 << 3)
+
+    public static let all: Self = [.date, .device, .styleName, .location]
+    public static let standard: Self = [.date, .styleName]
+}
+
 public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var enabled: Bool
     public var mode: WatermarkMode
@@ -31,10 +48,9 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
     public var imageScale: Float
     public var watermarkScale: Float
     public var template: WatermarkTemplate
-    public var includeDate: Bool
-    public var includeDevice: Bool
-    public var includeStyleName: Bool
-    public var includeLocation: Bool
+    /// 普通文字水印显示的信息，默认日期和风格；[] 表示全部关闭。
+    /// 模板底栏中的日期、设备、风格、地点由 insetContent 的字段独立决定。
+    public var includedFields: WatermarkContentFields
     public var locationOverrideText: String
     public var textColor: WatermarkTextColor
     public var customTextColorHex: String
@@ -53,10 +69,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         imageScale: Float = 0.22,
         watermarkScale: Float = 1,
         template: WatermarkTemplate = .signature,
-        includeDate: Bool = true,
-        includeDevice: Bool = false,
-        includeStyleName: Bool = true,
-        includeLocation: Bool = false,
+        includedFields: WatermarkContentFields = .standard,
         locationOverrideText: String = "",
         textColor: WatermarkTextColor = .automatic,
         customTextColorHex: String = "#FFFFFF",
@@ -74,10 +87,7 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         self.imageScale = min(0.6, max(0.08, imageScale))
         self.watermarkScale = min(2, max(0.5, watermarkScale))
         self.template = template
-        self.includeDate = includeDate
-        self.includeDevice = includeDevice
-        self.includeStyleName = includeStyleName
-        self.includeLocation = includeLocation
+        self.includedFields = includedFields
         self.locationOverrideText = locationOverrideText
         self.textColor = textColor
         self.customTextColorHex = customTextColorHex
@@ -101,10 +111,14 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         let decodedWatermarkScale = try container.decodeIfPresent(Float.self, forKey: .watermarkScale) ?? 1
         watermarkScale = min(2, max(0.5, decodedWatermarkScale))
         template = try container.decodeIfPresent(WatermarkTemplate.self, forKey: .template) ?? .signature
-        includeDate = try container.decodeIfPresent(Bool.self, forKey: .includeDate) ?? true
-        includeDevice = try container.decodeIfPresent(Bool.self, forKey: .includeDevice) ?? false
-        includeStyleName = try container.decodeIfPresent(Bool.self, forKey: .includeStyleName) ?? true
-        includeLocation = try container.decodeIfPresent(Bool.self, forKey: .includeLocation) ?? false
+        // Keep the existing JSON format and missing-key defaults for saved templates.
+        includedFields = []
+        for (key, field) in Self.persistedFields {
+            if try container.decodeIfPresent(Bool.self, forKey: key)
+                ?? WatermarkContentFields.standard.contains(field) {
+                includedFields.insert(field)
+            }
+        }
         locationOverrideText = try container.decodeIfPresent(String.self, forKey: .locationOverrideText) ?? ""
         textColor = try container.decodeIfPresent(WatermarkTextColor.self, forKey: .textColor) ?? .automatic
         customTextColorHex = try container.decodeIfPresent(String.self, forKey: .customTextColorHex) ?? "#FFFFFF"
@@ -125,10 +139,9 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(imageScale, forKey: .imageScale)
         try container.encode(watermarkScale, forKey: .watermarkScale)
         try container.encode(template, forKey: .template)
-        try container.encode(includeDate, forKey: .includeDate)
-        try container.encode(includeDevice, forKey: .includeDevice)
-        try container.encode(includeStyleName, forKey: .includeStyleName)
-        try container.encode(includeLocation, forKey: .includeLocation)
+        for (key, field) in Self.persistedFields {
+            try container.encode(includedFields.contains(field), forKey: key)
+        }
         try container.encode(locationOverrideText, forKey: .locationOverrideText)
         try container.encode(textColor, forKey: .textColor)
         try container.encode(customTextColorHex, forKey: .customTextColorHex)
@@ -136,6 +149,11 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         try container.encode(visualStyle, forKey: .visualStyle)
         try container.encode(effect, forKey: .effect)
     }
+
+    private static let persistedFields: [(CodingKeys, WatermarkContentFields)] = [
+        (.includeDate, .date), (.includeDevice, .device),
+        (.includeStyleName, .styleName), (.includeLocation, .location)
+    ]
 
     private enum CodingKeys: String, CodingKey {
         case enabled
@@ -168,12 +186,12 @@ public struct WatermarkPreset: Codable, Equatable, Sendable {
         weekdayText: String = ""
     ) -> String {
         let signature = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let style = includeStyleName ? styleName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
-        let device = includeDevice ? deviceName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
-        let date = includeDate ? dateText.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let style = includedFields.contains(.styleName) ? styleName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let device = includedFields.contains(.device) ? deviceName.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let date = includedFields.contains(.date) ? dateText.trimmingCharacters(in: .whitespacesAndNewlines) : ""
         let location: String
 
-        if includeLocation {
+        if includedFields.contains(.location) {
             let override = locationOverrideText.trimmingCharacters(in: .whitespacesAndNewlines)
             location = override.isEmpty
                 ? (locationText?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")

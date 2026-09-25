@@ -131,8 +131,137 @@ expect(
     "1x remains hardware 1x on single wide camera devices"
 )
 
+// The four legacy flags retain their defaults and all 16 combinations.
+let watermarkFieldFixtures: [(String, WatermarkContentFields, String)] = [
+    ("includeDate", .date, "2026.09.20"),
+    ("includeDevice", .device, "iPhone"),
+    ("includeStyleName", .styleName, "富士清新"),
+    ("includeLocation", .location, "北京")
+]
+let missingFieldsWatermark = try JSONDecoder().decode(WatermarkPreset.self, from: Data("{}".utf8))
+expect(missingFieldsWatermark == WatermarkPreset(), "missing watermark keys retain initializer defaults")
+for mask in 0..<16 {
+    var legacyObject: [String: Any] = ["text": "签名"]
+    var fields: WatermarkContentFields = []
+    for (index, fixture) in watermarkFieldFixtures.enumerated() {
+        let isIncluded = mask & (1 << index) != 0
+        legacyObject[fixture.0] = isIncluded
+        if isIncluded { fields.insert(fixture.1) }
+    }
+    let decoded = try JSONDecoder().decode(
+        WatermarkPreset.self,
+        from: JSONSerialization.data(withJSONObject: legacyObject)
+    )
+    expect(decoded.includedFields == fields, "legacy watermark flags decode correctly: \(mask)")
+    var expectedText = ["签名"]
+    // Signature layout order remains style, device, location, date, independent of set order.
+    for index in [2, 1, 3, 0] where mask & (1 << index) != 0 {
+        expectedText.append(watermarkFieldFixtures[index].2)
+    }
+    expect(
+        decoded.displayText(styleName: "富士清新", deviceName: "iPhone", locationText: "北京", dateText: "2026.09.20")
+            == expectedText.joined(separator: " · "),
+        "field selection preserves ordinary watermark content and order: \(mask)"
+    )
+    let configured = WatermarkPreset(text: "签名", includedFields: fields)
+    expect(configured == decoded, "new field configuration matches legacy flags: \(mask)")
+    let encoded = try JSONEncoder().encode(configured)
+    let encodedObject = try JSONSerialization.jsonObject(with: encoded) as! [String: Any]
+    for fixture in watermarkFieldFixtures {
+        expect(
+            encodedObject[fixture.0] as? Bool == legacyObject[fixture.0] as? Bool,
+            "saved watermark retains legacy boolean schema: \(fixture.0)"
+        )
+    }
+    let restored = try JSONDecoder().decode(WatermarkPreset.self, from: encoded)
+    expect(restored == configured, "field selections survive persistence: \(mask)")
+}
+let partialFieldsWatermark = try JSONDecoder().decode(
+    WatermarkPreset.self, from: Data(#"{"includeDate":false,"includeLocation":true}"#.utf8)
+)
+expect(partialFieldsWatermark.includedFields == [.styleName, .location], "partial legacy flags preserve absent-key defaults")
+var locationWatermark = WatermarkPreset(includedFields: [.location], locationOverrideText: " 上海 ")
+expect(
+    locationWatermark.displayText(styleName: "风格", deviceName: "设备", locationText: "北京", dateText: "日期")
+        == "Shot by Me · 上海",
+    "selected location uses the user's override"
+)
+locationWatermark.includedFields.remove(.location)
+expect(
+    locationWatermark.displayText(styleName: "风格", deviceName: "设备", locationText: "北京", dateText: "日期")
+        == "Shot by Me",
+    "removing location also hides overridden location text"
+)
+
+expect(
+    CameraTemplateCategory.allCases.map(\.title) == [
+        "亲密关系", "节日纪念", "旅行出行", "日常生活",
+        "自然瞬间", "运动爱好", "成长记录", "实用档案"
+    ],
+    "template categories follow the requested display order"
+)
+
+let legacyCategoriesByTemplateID: [String: String] = [
+    "minimal-travel": "minimalFrame", "classic-travel": "classicWatermark",
+    "classic-leica": "classicWatermark", "classic-leicax": "classicWatermark",
+    "classic-date": "classicWatermark", "color-olive": "colorWalk",
+    "color-ocean": "colorWalk", "color-coral": "colorWalk",
+    "frame-polaroid": "frames", "frame-film": "frames", "frame-viewfinder": "frames",
+    "personal-name": "personal", "personal-postcard": "personal", "personal-weekday": "personal"
+]
+for (id, legacyCategory) in legacyCategoriesByTemplateID {
+    guard var template = BuiltInCameraTemplates.preset(id: id) else {
+        expect(false, "legacy template still exists: \(id)")
+        continue
+    }
+    template.watermark.customTextColorHex = "#123456"
+    template.watermark.textColor = .custom
+    template.watermark.watermarkScale = 1.35
+    let data = try JSONEncoder().encode(template)
+    var object = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+    object["category"] = legacyCategory
+    let restored = try JSONDecoder().decode(
+        CameraTemplatePreset.self,
+        from: JSONSerialization.data(withJSONObject: object)
+    )
+    expect(restored == template, "legacy category migration preserves user settings: \(id)")
+}
+
+for category in CameraTemplateCategory.allCases {
+    let data = try JSONEncoder().encode(category)
+    let restored = try JSONDecoder().decode(CameraTemplateCategory.self, from: data)
+    expect(restored == category, "new template category survives persistence")
+}
+
+let legacyCategoryFallbacks: [String: CameraTemplateCategory] = [
+    "classicWatermark": .dailyLife, "colorWalk": .nature, "frames": .dailyLife,
+    "personal": .dailyLife, "minimalFrame": .dailyLife,
+    "personalFrame": .relationships, "seasonalFrame": .celebrations
+]
+for (legacyCategory, expected) in legacyCategoryFallbacks {
+    let data = try JSONEncoder().encode(legacyCategory)
+    let restored = try JSONDecoder().decode(CameraTemplateCategory.self, from: data)
+    expect(restored == expected, "unmatched legacy categories have a migration fallback")
+}
+
 let classicTravelTemplate = BuiltInCameraTemplates.preset(id: "classic-travel")
 expect(classicTravelTemplate != nil, "classic travel template exists")
+if var explicitFieldsTemplate = classicTravelTemplate {
+    explicitFieldsTemplate.watermark.includedFields = []
+    expect(
+        explicitFieldsTemplate.resolvedSlot(
+            .text(.date), styleName: "风格", deviceName: "设备", locationText: "北京", dateText: "2026.09.20"
+        ) == .text("2026.09.20"),
+        "explicit template fields remain independent of ordinary watermark field selection"
+    )
+    explicitFieldsTemplate.insetContent = .empty
+    expect(!explicitFieldsTemplate.usesLocation, "templates without either location source do not request location")
+    explicitFieldsTemplate.watermark.includedFields.insert(.location)
+    expect(explicitFieldsTemplate.usesLocation, "ordinary location field participates in template location requirements")
+    explicitFieldsTemplate.watermark.includedFields = []
+    explicitFieldsTemplate.insetContent = CameraTemplateInsetContent(left: .single(.text(.location)))
+    expect(explicitFieldsTemplate.usesLocation, "explicit location slots retain their location requirements")
+}
 expect(
     classicTravelTemplate?.photoFrame.baseInsets.bottom == 100,
     "template base inset is preserved"
@@ -149,6 +278,40 @@ expect(
     decodedTemplate?.photoFrame.baseInsets == classicTravelTemplate?.photoFrame.baseInsets,
     "template base insets survive persistence"
 )
+expect(
+    decodedTemplate?.coverImageName == "template-cover-classic-travel",
+    "template cover survives persistence"
+)
+if let encodedTemplate,
+   var legacyObject = try? JSONSerialization.jsonObject(with: encodedTemplate) as? [String: Any] {
+    legacyObject.removeValue(forKey: "coverImageName")
+    legacyObject.removeValue(forKey: "coverOrientation")
+    let legacyData = try? JSONSerialization.data(withJSONObject: legacyObject)
+    let legacyTemplate = legacyData.flatMap {
+        try? JSONDecoder().decode(CameraTemplatePreset.self, from: $0)
+    }
+    var expectedLegacyTemplate = classicTravelTemplate
+    expectedLegacyTemplate?.coverImageName = nil
+    expectedLegacyTemplate?.coverOrientation = .portrait
+    expect(
+        legacyTemplate != nil && legacyTemplate == expectedLegacyTemplate,
+        "templates saved without a cover retain all existing settings"
+    )
+} else {
+    expect(false, "legacy template compatibility fixture can be created")
+}
+
+if var landscapeTemplate = classicTravelTemplate {
+    landscapeTemplate.coverOrientation = .landscape
+    let data = try? JSONEncoder().encode(landscapeTemplate)
+    let restoredTemplate = data.flatMap {
+        try? JSONDecoder().decode(CameraTemplatePreset.self, from: $0)
+    }
+    expect(
+        restoredTemplate == landscapeTemplate,
+        "landscape cover orientation survives persistence without changing template settings"
+    )
+}
 
 let guidanceDefaults = PhotoGuidanceSettings()
 expect(guidanceDefaults.isEnabled, "photo guidance is enabled by default")

@@ -2,26 +2,55 @@ import Foundation
 import UIKit
 
 public enum CameraTemplateCategory: String, Codable, CaseIterable, Identifiable, Sendable {
-    case classicWatermark
-    case colorWalk
-    case frames
-    case personal
-    case minimalFrame
-    case personalFrame
-    case seasonalFrame
+    case relationships
+    case celebrations
+    case travel
+    case dailyLife
+    case nature
+    case sportsAndHobbies
+    case growth
+    case practicalArchive
 
     public var id: String { rawValue }
 
     public var title: String {
         switch self {
-        case .classicWatermark: return "经典水印"
-        case .colorWalk: return "Color walk"
-        case .frames: return "相框"
-        case .personal: return "个人水印"
-        case .minimalFrame: return "极简边框"
-        case .personalFrame: return "个人边框"
-        case .seasonalFrame: return "时节边框"
+        case .relationships: return "亲密关系"
+        case .celebrations: return "节日纪念"
+        case .travel: return "旅行出行"
+        case .dailyLife: return "日常生活"
+        case .nature: return "自然瞬间"
+        case .sportsAndHobbies: return "运动爱好"
+        case .growth: return "成长记录"
+        case .practicalArchive: return "实用档案"
         }
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        if let category = Self(rawValue: value) {
+            self = category
+            return
+        }
+
+        // Fallbacks for older categories; known presets migrate by ID below.
+        switch value {
+        case "classicWatermark", "frames", "personal", "minimalFrame": self = .dailyLife
+        case "colorWalk": self = .nature
+        case "personalFrame": self = .relationships
+        case "seasonalFrame": self = .celebrations
+        default:
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown template category: \(value)"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
     }
 }
 
@@ -386,14 +415,32 @@ public enum ResolvedCameraTemplateSlot: Equatable, Sendable {
     }
 }
 
+/// 模板列表中封面卡片的方向，不决定相机拍摄方向。
+public enum CameraTemplateCoverOrientation: String, Codable, CaseIterable, Sendable {
+    case portrait
+    case landscape
+}
+
 public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
+    /// 稳定标识，用于模板查找、选择和持久化，不随显示名称改变。
     public let id: String
+    /// 模板名称与简短说明。
     public var name: String
     public var summary: String
+    /// 模板库中的所属分类。
     public var category: CameraTemplateCategory
+    /// 模板封面使用的图片资源名（不含扩展名）。nil 时使用通用示例图。
+    /// 仅用于模板库展示，不参与实时取景或最终照片渲染。
+    public var coverImageName: String?
+    /// 模板列表中的封面方向，默认竖版。
+    public var coverOrientation: CameraTemplateCoverOrientation
+    /// 水印的默认内容与样式；单字段配置可以覆盖默认字号、颜色和字体。
     public var watermark: WatermarkPreset
+    /// 照片边框、背景和四周留白。
     public var photoFrame: PhotoFramePreset
+    /// 留白区域左、中、右三列的预设行与字段。
     public var insetContent: CameraTemplateInsetContent
+    /// 是否需要 Pro 权益。
     public var isPro: Bool
 
     public init(
@@ -401,6 +448,8 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
         name: String,
         summary: String,
         category: CameraTemplateCategory,
+        coverImageName: String? = nil,
+        coverOrientation: CameraTemplateCoverOrientation = .portrait,
         watermark: WatermarkPreset,
         photoFrame: PhotoFramePreset,
         insetContent: CameraTemplateInsetContent = .empty,
@@ -410,6 +459,8 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
         self.name = name
         self.summary = summary
         self.category = category
+        self.coverImageName = coverImageName
+        self.coverOrientation = coverOrientation
         self.watermark = watermark
         self.photoFrame = photoFrame
         self.insetContent = insetContent
@@ -421,6 +472,8 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
         case name
         case summary
         case category
+        case coverImageName
+        case coverOrientation
         case watermark
         case photoFrame
         case insetContent
@@ -436,7 +489,19 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
         id = try container.decode(String.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         summary = try container.decode(String.self, forKey: .summary)
-        category = try container.decode(CameraTemplateCategory.self, forKey: .category)
+        let storedCategory = try container.decode(String.self, forKey: .category)
+        let decodedCategory = try container.decode(CameraTemplateCategory.self, forKey: .category)
+        // Migrate only the category, keeping the user's saved template styling intact.
+        if CameraTemplateCategory(rawValue: storedCategory) == nil {
+            category = BuiltInCameraTemplates.preset(id: id)?.category ?? decodedCategory
+        } else {
+            category = decodedCategory
+        }
+        coverImageName = try container.decodeIfPresent(String.self, forKey: .coverImageName)
+        coverOrientation = try container.decodeIfPresent(
+            CameraTemplateCoverOrientation.self,
+            forKey: .coverOrientation
+        ) ?? .portrait
         watermark = try container.decode(WatermarkPreset.self, forKey: .watermark)
         photoFrame = try container.decode(PhotoFramePreset.self, forKey: .photoFrame)
         if let decodedContent = try container.decodeIfPresent(
@@ -460,6 +525,8 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
         try container.encode(name, forKey: .name)
         try container.encode(summary, forKey: .summary)
         try container.encode(category, forKey: .category)
+        try container.encodeIfPresent(coverImageName, forKey: .coverImageName)
+        try container.encode(coverOrientation, forKey: .coverOrientation)
         try container.encode(watermark, forKey: .watermark)
         try container.encode(photoFrame, forKey: .photoFrame)
         try container.encode(insetContent, forKey: .insetContent)
@@ -471,7 +538,7 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
     }
 
     public var usesLocation: Bool {
-        watermark.includeLocation
+        watermark.includedFields.contains(.location)
             || insetContent.usesLocation
     }
 
@@ -517,11 +584,249 @@ public struct CameraTemplatePreset: Codable, Identifiable, Equatable, Sendable {
 
 public enum BuiltInCameraTemplates {
     public static let all: [CameraTemplatePreset] = [
+         CameraTemplatePreset(
+             id: "relationships-family",
+             name: "旅拍记录",
+             summary: "日期、设备与地点",
+             category: .relationships,
+             coverImageName: "template-cover-relationships-family",
+             watermark: WatermarkPreset(
+                 enabled: true,
+                 text: "我的旅拍",
+                 position: .bottom,
+                 opacity: 0.84,
+                 watermarkScale: 0.9,
+                 template: .travelCard,
+                 includedFields: .all,
+                 textColor: .black,
+                 font: .sourceHanSans,
+                 visualStyle: .darkBadge,
+                 effect: .none
+             ),
+             photoFrame: PhotoFramePreset(
+                 enabled: true,
+                 cornerRadius: 0,
+                 shadowEnabled: false,
+                 baseInsets : UIEdgeInsets(
+                      top: 20,
+                      left: 20,
+                      bottom: 100,
+                      right: 20
+                  )
+             ),
+             insetContent: CameraTemplateInsetContent(
+                 left: .single(.icon(
+                     .beijing,
+                     fontScale: 1.5,
+ //                    textColor: .black
+                     customTextColorHex: "#ff0000"
+                 )),
+                 right: CameraTemplateContentColumn(lines: [
+                     CameraTemplateContentLine(fields: [
+                         .text(.location, fontScale: 1.05, textColor: .blue),
+                         .text(.custom, customText: "|", fontScale: 0.82, textColor: .blue),
+                         .text(.date, fontScale: 1.05, textColor: .blue)
+                     ]),
+
+                 ])
+             )
+        ),
+        CameraTemplatePreset(
+             id: "relationships-couple",
+             name: "旅拍记录",
+             summary: "日期、设备与地点",
+             category: .relationships,
+             coverImageName: "template-cover-relationships-couple",
+             watermark: WatermarkPreset(
+                 enabled: true,
+                 text: "我的旅拍",
+                 position: .bottom,
+                 opacity: 0.84,
+                 watermarkScale: 0.9,
+                 template: .travelCard,
+                 includedFields: .all,
+                 textColor: .black,
+                 font: .sourceHanSans,
+                 visualStyle: .darkBadge,
+                 effect: .none
+             ),
+             photoFrame: PhotoFramePreset(
+                 enabled: true,
+                 cornerRadius: 0,
+                 shadowEnabled: false,
+                 baseInsets : UIEdgeInsets(
+                      top: 0,
+                      left: 0,
+                      bottom: 100,
+                      right: 0
+                  )
+             ),
+             insetContent: CameraTemplateInsetContent(
+                 left: .single(.icon(
+                     .beijing,
+                     fontScale: 1.5,
+ //                    textColor: .black
+                     customTextColorHex: "#ff0000"
+                 )),
+                 right: CameraTemplateContentColumn(lines: [
+                     CameraTemplateContentLine(fields: [
+                         .text(.location, fontScale: 1.05, textColor: .blue),
+                         .text(.custom, customText: "|", fontScale: 0.82, textColor: .blue),
+                         .text(.date, fontScale: 1.05, textColor: .blue)
+                     ]),
+
+                 ])
+             )
+        ),
+         
+         CameraTemplatePreset(
+              id: "relationships-party",
+              name: "旅拍记录",
+              summary: "日期、设备与地点",
+              category: .relationships,
+              coverImageName: "template-cover-relationships-party",
+              watermark: WatermarkPreset(
+                  enabled: true,
+                  text: "我的旅拍",
+                  position: .bottom,
+                  opacity: 0.84,
+                  watermarkScale: 0.9,
+                  template: .travelCard,
+                  includedFields: .all,
+                  textColor: .black,
+                  font: .sourceHanSans,
+                  visualStyle: .darkBadge,
+                  effect: .none
+              ),
+              photoFrame: PhotoFramePreset(
+                  enabled: true,
+                  cornerRadius: 0,
+                  shadowEnabled: false,
+                  baseInsets : UIEdgeInsets(
+                       top: 0,
+                       left: 0,
+                       bottom: 100,
+                       right: 0
+                   )
+              ),
+              insetContent: CameraTemplateInsetContent(
+                  left: .single(.icon(
+                      .beijing,
+                      fontScale: 1.5,
+  //                    textColor: .black
+                      customTextColorHex: "#ff0000"
+                  )),
+                  right: CameraTemplateContentColumn(lines: [
+                      CameraTemplateContentLine(fields: [
+                          .text(.location, fontScale: 1.05, textColor: .blue),
+                          .text(.custom, customText: "|", fontScale: 0.82, textColor: .blue),
+                          .text(.date, fontScale: 1.05, textColor: .blue)
+                      ]),
+
+                  ])
+              )
+         ),
+        
+         CameraTemplatePreset(
+              id: "relationships-paternity",
+              name: "旅拍记录",
+              summary: "日期、设备与地点",
+              category: .relationships,
+              coverImageName: "template-cover-relationships-paternity",
+              watermark: WatermarkPreset(
+                  enabled: true,
+                  text: "我的旅拍",
+                  position: .bottom,
+                  opacity: 0.84,
+                  watermarkScale: 0.9,
+                  template: .travelCard,
+                  includedFields: .all,
+                  textColor: .black,
+                  font: .sourceHanSans,
+                  visualStyle: .darkBadge,
+                  effect: .none
+              ),
+              photoFrame: PhotoFramePreset(
+                  enabled: true,
+                  cornerRadius: 0,
+                  shadowEnabled: false,
+                  baseInsets : UIEdgeInsets(
+                       top: 0,
+                       left: 0,
+                       bottom: 100,
+                       right: 0
+                   )
+              ),
+              insetContent: CameraTemplateInsetContent(
+                  left: .single(.icon(
+                      .beijing,
+                      fontScale: 1.5,
+  //                    textColor: .black
+                      customTextColorHex: "#ff0000"
+                  )),
+                  right: CameraTemplateContentColumn(lines: [
+                      CameraTemplateContentLine(fields: [
+                          .text(.location, fontScale: 1.05, textColor: .blue),
+                          .text(.custom, customText: "|", fontScale: 0.82, textColor: .blue),
+                          .text(.date, fontScale: 1.05, textColor: .blue)
+                      ]),
+
+                  ])
+              )
+         ),
+         
+         CameraTemplatePreset(
+              id: "travel-moment",
+              name: "旅拍记录",
+              summary: "日期、设备与地点",
+              category: .relationships,
+              coverImageName: "template-cover-relationships-paternity",
+              watermark: WatermarkPreset(
+                  enabled: true,
+                  text: "我的旅拍",
+                  position: .bottom,
+                  opacity: 0.84,
+                  watermarkScale: 0.9,
+                  template: .travelCard,
+                  includedFields: .all,
+                  textColor: .black,
+                  font: .sourceHanSans,
+                  visualStyle: .darkBadge,
+                  effect: .none
+              ),
+              photoFrame: PhotoFramePreset(
+                  enabled: true,
+                  cornerRadius: 0,
+                  shadowEnabled: false,
+                  baseInsets : UIEdgeInsets(
+                       top: 0,
+                       left: 0,
+                       bottom: 100,
+                       right: 0
+                   )
+              ),
+              insetContent: CameraTemplateInsetContent(
+                  left: .single(.icon(
+                      .beijing,
+                      fontScale: 1.5,
+                      customTextColorHex: "#ff0000"
+                  )),
+                  right: CameraTemplateContentColumn(lines: [
+                      CameraTemplateContentLine(fields: [
+                          .text(.location, fontScale: 1.05, textColor: .blue),
+                          .text(.custom, customText: "|", fontScale: 0.82, textColor: .blue),
+                          .text(.date, fontScale: 1.05, textColor: .blue)
+                      ]),
+
+                  ])
+              )
+         ),
+         
         CameraTemplatePreset(
             id: "minimal-travel",
             name: "旅拍记录",
             summary: "日期、设备与地点",
-            category: .minimalFrame,
+            category: .travel,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "我的旅拍",
@@ -529,10 +834,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.84,
                 watermarkScale: 0.9,
                 template: .travelCard,
-                includeDate: true,
-                includeDevice: true,
-                includeStyleName: true,
-                includeLocation: true,
+                includedFields: .all,
                 textColor: .black,
                 font: .sourceHanSans,
                 visualStyle: .darkBadge,
@@ -559,7 +861,9 @@ public enum BuiltInCameraTemplates {
             id: "classic-travel",
             name: "旅拍记录",
             summary: "日期、设备与地点",
-            category: .classicWatermark,
+            category: .travel,
+            coverImageName: "template-cover-classic-travel",
+            coverOrientation: .portrait,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "我的旅拍",
@@ -567,10 +871,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.84,
                 watermarkScale: 0.9,
                 template: .travelCard,
-                includeDate: true,
-                includeDevice: true,
-                includeStyleName: true,
-                includeLocation: true,
+                includedFields: .all,
                 textColor: .black,
                 font: .sourceHanSans,
                 visualStyle: .darkBadge,
@@ -590,8 +891,9 @@ public enum BuiltInCameraTemplates {
             insetContent: CameraTemplateInsetContent(
                 left: .single(.icon(
                     .beijing,
-                    fontScale: 1.2,
-                    textColor: .black
+                    fontScale: 1.5,
+//                    textColor: .black
+                    customTextColorHex: "#ff0000"
                 )),
 //                center: .single(.text(.signature)),
                 right: CameraTemplateContentColumn(lines: [
@@ -612,7 +914,9 @@ public enum BuiltInCameraTemplates {
             id: "classic-leica",
             name: "经典铭牌",
             summary: "底部留白与相机参数",
-            category: .classicWatermark,
+            category: .practicalArchive,
+            coverImageName: "template-cover-classic-travel",
+            coverOrientation: .landscape,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "STYLECAMERA",
@@ -620,10 +924,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.76,
                 watermarkScale: 0.82,
                 template: .dateStamp,
-                includeDate: true,
-                includeDevice: true,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date, .device],
                 textColor: .black,
                 font: .bebasNeue,
                 visualStyle: .minimal,
@@ -664,7 +965,7 @@ public enum BuiltInCameraTemplates {
             id: "classic-leicax",
             name: "经典铭牌",
             summary: "底部留白与相机参数",
-            category: .classicWatermark,
+            category: .practicalArchive,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "STYLECAMERA",
@@ -672,10 +973,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.76,
                 watermarkScale: 0.82,
                 template: .dateStamp,
-                includeDate: true,
-                includeDevice: true,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date, .device],
                 textColor: .black,
                 font: .bebasNeue,
                 visualStyle: .minimal,
@@ -715,7 +1013,7 @@ public enum BuiltInCameraTemplates {
             id: "classic-date",
             name: "日期札记",
             summary: "简洁日期与签名",
-            category: .classicWatermark,
+            category: .dailyLife,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "DAILY MOMENT",
@@ -723,10 +1021,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.78,
                 watermarkScale: 0.86,
                 template: .dateStamp,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: true,
+                includedFields: [.date, .location],
                 textColor: .white,
                 font: .caveat,
                 visualStyle: .minimal,
@@ -739,7 +1034,7 @@ public enum BuiltInCameraTemplates {
             id: "color-olive",
             name: "橄榄漫步",
             summary: "留白与自然记录",
-            category: .colorWalk,
+            category: .nature,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "Stay alive · keep trying",
@@ -747,10 +1042,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.82,
                 watermarkScale: 0.82,
                 template: .signature,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date],
                 textColor: .white,
                 font: .caveat,
                 visualStyle: .minimal,
@@ -769,7 +1061,7 @@ public enum BuiltInCameraTemplates {
             id: "color-ocean",
             name: "海岸蓝",
             summary: "清爽蓝调留白",
-            category: .colorWalk,
+            category: .nature,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "SUMMER WALK",
@@ -777,10 +1069,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.78,
                 watermarkScale: 0.78,
                 template: .locationCard,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: true,
+                includedFields: [.date, .location],
                 textColor: .white,
                 font: .sourceHanSans,
                 visualStyle: .minimal,
@@ -800,7 +1089,7 @@ public enum BuiltInCameraTemplates {
             id: "color-coral",
             name: "落日珊瑚",
             summary: "暖色留白与短句",
-            category: .colorWalk,
+            category: .nature,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "GOOD DAY",
@@ -808,10 +1097,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.82,
                 watermarkScale: 0.82,
                 template: .signature,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date],
                 textColor: .white,
                 font: .smileySans,
                 visualStyle: .minimal,
@@ -831,7 +1117,7 @@ public enum BuiltInCameraTemplates {
             id: "frame-polaroid",
             name: "拍立得",
             summary: "经典下方留白",
-            category: .frames,
+            category: .dailyLife,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "StyleCamera",
@@ -839,10 +1125,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.72,
                 watermarkScale: 0.82,
                 template: .signature,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date],
                 textColor: .black,
                 font: .caveat,
                 visualStyle: .minimal,
@@ -861,7 +1144,7 @@ public enum BuiltInCameraTemplates {
             id: "frame-film",
             name: "胶片边框",
             summary: "深色胶片质感",
-            category: .frames,
+            category: .dailyLife,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "STYLECAMERA · 12",
@@ -869,10 +1152,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.72,
                 watermarkScale: 0.74,
                 template: .signature,
-                includeDate: false,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [],
                 textColor: .orange,
                 font: .bebasNeue,
                 visualStyle: .minimal,
@@ -892,7 +1172,7 @@ public enum BuiltInCameraTemplates {
             id: "frame-viewfinder",
             name: "取景框",
             summary: "轻量角标取景线",
-            category: .frames,
+            category: .practicalArchive,
             watermark: WatermarkPreset(enabled: false),
             photoFrame: PhotoFramePreset(
                 enabled: true,
@@ -908,7 +1188,7 @@ public enum BuiltInCameraTemplates {
             id: "personal-name",
             name: "摄影师签名",
             summary: "姓名、地点与日期",
-            category: .personal,
+            category: .practicalArchive,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "PHOTOGRAPHER",
@@ -916,10 +1196,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.84,
                 watermarkScale: 0.9,
                 template: .stacked,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: true,
-                includeLocation: true,
+                includedFields: [.date, .styleName, .location],
                 textColor: .white,
                 font: .sourceHanSerif,
                 visualStyle: .darkBadge,
@@ -931,7 +1208,7 @@ public enum BuiltInCameraTemplates {
             id: "personal-postcard",
             name: "旅行明信片",
             summary: "居中标题与地点",
-            category: .personal,
+            category: .travel,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "我的旅拍",
@@ -939,10 +1216,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.86,
                 watermarkScale: 0.92,
                 template: .centeredTravel,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: true,
+                includedFields: [.date, .location],
                 textColor: .black,
                 font: .sourceHanSerif,
                 visualStyle: .lightBadge,
@@ -962,7 +1236,7 @@ public enum BuiltInCameraTemplates {
             id: "personal-weekday",
             name: "星期札记",
             summary: "日期、短句与签名",
-            category: .personal,
+            category: .dailyLife,
             watermark: WatermarkPreset(
                 enabled: true,
                 text: "勇往直前 不畏艰险",
@@ -970,10 +1244,7 @@ public enum BuiltInCameraTemplates {
                 opacity: 0.82,
                 watermarkScale: 0.88,
                 template: .weekdayQuote,
-                includeDate: true,
-                includeDevice: false,
-                includeStyleName: false,
-                includeLocation: false,
+                includedFields: [.date],
                 textColor: .white,
                 font: .maShanZheng,
                 visualStyle: .darkBadge,

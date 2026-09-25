@@ -42,7 +42,7 @@ struct CameraTemplateGalleryView: View {
             .padding(.horizontal, 16)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                LazyHStack(alignment: .top, spacing: 16) {
                     ForEach(templates(in: category)) { template in
                         CameraTemplateCard(
                             template: template,
@@ -66,6 +66,11 @@ struct CameraTemplateGalleryView: View {
                         )
                     }
                 }
+                // Reserve the full row height even when taller cards are offscreen.
+                .frame(
+                    height: templates(in: category).map { $0.coverOrientation.cardSize.height }.max() ?? 0,
+                    alignment: .top
+                )
                 .padding(.horizontal, 16)
             }
         }
@@ -215,6 +220,15 @@ struct CameraTemplateEditorView: View {
     }
 }
 
+private extension CameraTemplateCoverOrientation {
+    var cardSize: CGSize {
+        switch self {
+        case .portrait: return CGSize(width: 195, height: 260)
+        case .landscape: return CGSize(width: 352, height: 195)
+        }
+    }
+}
+
 private struct CameraTemplateCard: View {
     let template: CameraTemplatePreset
     let isSelected: Bool
@@ -233,7 +247,10 @@ private struct CameraTemplateCard: View {
                         locationText: "北京",
                         usesStaticImage: true
                     )
-                    .frame(width: 240, height: 320)
+                    .frame(
+                        width: template.coverOrientation.cardSize.width,
+                        height: template.coverOrientation.cardSize.height
+                    )
                     .background(.red)
                     
                     .clipped()
@@ -252,7 +269,7 @@ private struct CameraTemplateCard: View {
 //                    .padding(10)
 //                    .padding(.trailing, 34)
                 }
-                .frame(width: 240, alignment: .leading)
+                .frame(width: template.coverOrientation.cardSize.width, alignment: .leading)
                 .background(StyleCameraTheme.panelBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 .overlay(alignment: .topTrailing) {
@@ -364,6 +381,11 @@ private struct CameraTemplateArtworkView: View {
     private var sampleImage: Image {
         if !usesStaticImage, let previewImage {
             return Image(uiImage: previewImage)
+        }
+        if usesStaticImage,
+           let coverImageName = template.coverImageName,
+           let image = UIImage(named: coverImageName) {
+            return Image(uiImage: image)
         }
         if let image = UIImage(named: "photo-frame-sample") {
             return Image(uiImage: image)
